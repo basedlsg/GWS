@@ -120,20 +120,50 @@ export function CulminationPage() {
 
   // Handle adding achievement
   const handleAddAchievement = (achievementData: Omit<Achievement, 'id' | 'createdAt' | 'updatedAt'>) => {
-    if (!activePortfolio) return;
+    try {
+      console.log('🎯 handleAddAchievement called with:', achievementData);
+      console.log('🎯 activePortfolio:', activePortfolio);
 
-    const newAchievement = addAchievementToPortfolio(activePortfolio.id, achievementData);
+      if (!activePortfolio) {
+        console.error('❌ No active portfolio!');
+        toast({
+          title: 'Error',
+          description: 'No active portfolio selected',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    if (newAchievement) {
-      setPortfolios(loadPortfolios());
-      const updated = loadPortfolios().find((p) => p.id === activePortfolio.id);
-      if (updated) setActivePortfolio(updated);
+      const newAchievement = addAchievementToPortfolio(activePortfolio.id, achievementData);
+      console.log('🎯 newAchievement returned:', newAchievement);
 
-      setShowAchievementForm(false);
+      if (newAchievement) {
+        setPortfolios(loadPortfolios());
+        const updated = loadPortfolios().find((p) => p.id === activePortfolio.id);
+        console.log('🎯 updated portfolio:', updated);
+        console.log('🎯 updated achievements:', updated?.achievements);
+        if (updated) setActivePortfolio(updated);
 
+        setShowAchievementForm(false);
+
+        toast({
+          title: 'Achievement Added',
+          description: `"${newAchievement.title}" has been added to your portfolio`,
+        });
+      } else {
+        console.error('❌ addAchievementToPortfolio returned null!');
+        toast({
+          title: 'Error',
+          description: 'Failed to add achievement to portfolio',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error in handleAddAchievement:', error);
       toast({
-        title: 'Achievement Added',
-        description: `"${newAchievement.title}" has been added to your portfolio`,
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        variant: 'destructive',
       });
     }
   };

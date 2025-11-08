@@ -22,6 +22,8 @@ export interface SettingsContextValue {
   updateCulminationSettings: (updates: Partial<CulminationSettings>) => void;
   resetSettings: () => void;
   hasGeminiApiKey: boolean;
+  hasGroqApiKey: boolean;
+  hasAnyAIProvider: boolean;
 }
 
 /**
@@ -139,6 +141,20 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   }, [settings.geminiApiKey]);
 
   /**
+   * Check if Groq API key is configured
+   */
+  const hasGroqApiKey = useMemo(() => {
+    return Boolean(settings.groqApiKey && settings.groqApiKey.trim().length > 0);
+  }, [settings.groqApiKey]);
+
+  /**
+   * Check if any AI provider is configured
+   */
+  const hasAnyAIProvider = useMemo(() => {
+    return hasGeminiApiKey || hasGroqApiKey;
+  }, [hasGeminiApiKey, hasGroqApiKey]);
+
+  /**
    * Memoize context value to prevent unnecessary re-renders
    */
   const value = useMemo<SettingsContextValue>(
@@ -151,6 +167,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       updateCulminationSettings,
       resetSettings,
       hasGeminiApiKey,
+      hasGroqApiKey,
+      hasAnyAIProvider,
     }),
     [
       settings,
@@ -161,6 +179,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       updateCulminationSettings,
       resetSettings,
       hasGeminiApiKey,
+      hasGroqApiKey,
+      hasAnyAIProvider,
     ]
   );
 

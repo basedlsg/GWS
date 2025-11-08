@@ -74,10 +74,16 @@ export function AchievementForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('📝 Form submitted!');
+    console.log('📝 title:', title);
+    console.log('📝 targetDate:', targetDate);
 
-    if (!title.trim() || !targetDate) return;
+    if (!title.trim() || !targetDate) {
+      console.warn('⚠️ Form validation failed - missing title or targetDate');
+      return;
+    }
 
-    onSubmit({
+    const achievementData = {
       title: title.trim(),
       description: description.trim(),
       category,
@@ -88,7 +94,10 @@ export function AchievementForm({
       tags,
       metrics,
       narrative: narrative.trim() || undefined,
-    });
+    };
+
+    console.log('📝 Calling onSubmit with:', achievementData);
+    onSubmit(achievementData);
   };
 
   const handleTemplateSelect = (template: AchievementTemplate) => {

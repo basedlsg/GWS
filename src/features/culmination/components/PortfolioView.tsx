@@ -22,7 +22,12 @@ export function PortfolioView({
   onAchievementDelete,
   onAchievementClick,
 }: PortfolioViewProps) {
+  console.log('🎨 PortfolioView rendering with achievements:', achievements);
+  console.log('🎨 achievements.length:', achievements.length);
+  console.log('🎨 layout:', layout);
+
   if (achievements.length === 0) {
+    console.log('🎨 No achievements - showing empty state');
     return (
       <div className="text-center py-12 text-muted-foreground">
         <p className="text-lg mb-2">No achievements in this portfolio yet</p>

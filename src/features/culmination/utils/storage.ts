@@ -114,10 +114,19 @@ export function addAchievementToPortfolio(
   portfolioId: string,
   achievement: Omit<Achievement, 'id' | 'createdAt' | 'updatedAt'>
 ): Achievement | null {
-  const portfolios = loadPortfolios();
-  const portfolio = portfolios.find((p) => p.id === portfolioId);
+  console.log('📦 addAchievementToPortfolio called with portfolioId:', portfolioId);
+  console.log('📦 achievement data:', achievement);
 
-  if (!portfolio) return null;
+  const portfolios = loadPortfolios();
+  console.log('📦 loaded portfolios:', portfolios);
+
+  const portfolio = portfolios.find((p) => p.id === portfolioId);
+  console.log('📦 found portfolio:', portfolio);
+
+  if (!portfolio) {
+    console.error('❌ Portfolio not found!');
+    return null;
+  }
 
   const now = new Date().toISOString();
   const newAchievement: Achievement = {
@@ -126,11 +135,16 @@ export function addAchievementToPortfolio(
     createdAt: now,
     updatedAt: now,
   };
+  console.log('📦 created new achievement:', newAchievement);
 
   portfolio.achievements.push(newAchievement);
+  console.log('📦 portfolio achievements after push:', portfolio.achievements);
+
   portfolio.updatedAt = now;
 
-  savePortfolios(portfolios);
+  const saveResult = savePortfolios(portfolios);
+  console.log('📦 savePortfolios result:', saveResult);
+
   return newAchievement;
 }
 

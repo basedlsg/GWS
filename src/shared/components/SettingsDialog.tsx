@@ -39,19 +39,33 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     updateCulminationSettings,
     resetSettings,
     hasGeminiApiKey,
+    hasGroqApiKey,
+    hasAnyAIProvider,
   } = useSettings();
 
   const { toast } = useToast();
-  const [showApiKey, setShowApiKey] = useState(false);
-  const [apiKeyInput, setApiKeyInput] = useState(settings.geminiApiKey || '');
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
+  const [showGroqKey, setShowGroqKey] = useState(false);
+  const [geminiKeyInput, setGeminiKeyInput] = useState(settings.geminiApiKey || '');
+  const [groqKeyInput, setGroqKeyInput] = useState(settings.groqApiKey || '');
 
   const storageSize = getFormattedStorageSize();
   const storagePercentage = getStoragePercentage();
 
   const handleSave = () => {
-    // Update API key if changed
-    if (apiKeyInput !== settings.geminiApiKey) {
-      updateSettings({ geminiApiKey: apiKeyInput.trim() || undefined });
+    // Update API keys if changed
+    const updates: any = {};
+
+    if (geminiKeyInput !== settings.geminiApiKey) {
+      updates.geminiApiKey = geminiKeyInput.trim() || undefined;
+    }
+
+    if (groqKeyInput !== settings.groqApiKey) {
+      updates.groqApiKey = groqKeyInput.trim() || undefined;
+    }
+
+    if (Object.keys(updates).length > 0) {
+      updateSettings(updates);
     }
 
     toast({
@@ -65,7 +79,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const handleReset = () => {
     if (confirm('Are you sure you want to reset all settings to defaults?')) {
       resetSettings();
-      setApiKeyInput('');
+      setGeminiKeyInput('');
+      setGroqKeyInput('');
       toast({
         title: 'Settings reset',
         description: 'All settings have been reset to defaults.',
@@ -113,42 +128,118 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
 
             <Separator />
 
-            <div className="space-y-2">
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Gemini API Key</label>
-                {hasGeminiApiKey && (
-                  <Badge variant="secondary" className="text-xs">
-                    Configured
+                <label className="text-sm font-medium">AI Provider</label>
+                {hasAnyAIProvider && (
+                  <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400">
+                    ✓ AI Enabled
                   </Badge>
                 )}
               </div>
-              <div className="relative">
-                <Input
-                  type={showApiKey ? 'text' : 'password'}
-                  placeholder="Enter your Gemini API key (optional)"
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  className="pr-10"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Preferred Provider</label>
+                <Select
+                  value={settings.preferredAIProvider}
+                  onValueChange={(value) => updateSettings({ preferredAIProvider: value as any })}
                 >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="groq">Groq (Recommended - Fast & Free)</SelectItem>
+                    <SelectItem value="gemini">Gemini (Google AI)</SelectItem>
+                    <SelectItem value="template">Template Mode (No AI)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Choose which AI provider to use. Falls back to templates if unavailable.
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Get your free API key from{' '}
-                <a
-                  href="https://makersuite.google.com/app/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline hover:text-foreground"
-                >
-                  Google AI Studio
-                </a>
-                . Your key is stored locally in your browser.
+
+              {/* Groq API Key */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Groq API Key (Recommended)</label>
+                  {hasGroqApiKey && (
+                    <Badge variant="secondary" className="text-xs">
+                      Configured
+                    </Badge>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    type={showGroqKey ? 'text' : 'password'}
+                    placeholder="Enter your Groq API key (optional)"
+                    value={groqKeyInput}
+                    onChange={(e) => setGroqKeyInput(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGroqKey(!showGroqKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showGroqKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Get your free API key from{' '}
+                  <a
+                    href="https://console.groq.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    Groq Console
+                  </a>
+                  . Truly free with 14,400 requests/day. Fastest AI responses.
+                </p>
+              </div>
+
+              {/* Gemini API Key */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Gemini API Key</label>
+                  {hasGeminiApiKey && (
+                    <Badge variant="secondary" className="text-xs">
+                      Configured
+                    </Badge>
+                  )}
+                </div>
+                <div className="relative">
+                  <Input
+                    type={showGeminiKey ? 'text' : 'password'}
+                    placeholder="Enter your Gemini API key (optional)"
+                    value={geminiKeyInput}
+                    onChange={(e) => setGeminiKeyInput(e.target.value)}
+                    className="pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowGeminiKey(!showGeminiKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showGeminiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Get your API key from{' '}
+                  <a
+                    href="https://makersuite.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-foreground"
+                  >
+                    Google AI Studio
+                  </a>
+                  . Free tier available.
+                </p>
+              </div>
+
+              <p className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-md">
+                <strong>Privacy:</strong> API keys are stored locally in your browser only. They are never sent anywhere except to the respective AI provider when you use AI features.
               </p>
             </div>
 

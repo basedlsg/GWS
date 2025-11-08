@@ -45,11 +45,18 @@ export interface CulminationSettings {
 }
 
 /**
+ * AI provider options
+ */
+export type AIProvider = 'groq' | 'gemini' | 'template';
+
+/**
  * Global application settings
  */
 export interface Settings {
   // Global settings
   geminiApiKey?: string;
+  groqApiKey?: string;
+  preferredAIProvider: AIProvider;
   theme: Theme;
 
   // Feature-specific settings
@@ -67,6 +74,8 @@ export interface Settings {
  */
 export const DEFAULT_SETTINGS: Settings = {
   geminiApiKey: undefined,
+  groqApiKey: undefined,
+  preferredAIProvider: 'template', // Default to template mode
   theme: 'dark',
   transmute: {
     defaultTheme: 'cyberpunk',
