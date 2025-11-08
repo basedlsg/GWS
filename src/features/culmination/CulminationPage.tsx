@@ -138,11 +138,24 @@ export function CulminationPage() {
       console.log('🎯 newAchievement returned:', newAchievement);
 
       if (newAchievement) {
-        setPortfolios(loadPortfolios());
-        const updated = loadPortfolios().find((p) => p.id === activePortfolio.id);
+        // Reload all portfolios from localStorage
+        const freshPortfolios = loadPortfolios();
+        console.log('🎯 freshPortfolios loaded:', freshPortfolios.length, 'portfolios');
+
+        setPortfolios(freshPortfolios);
+
+        // Find the updated active portfolio
+        const updated = freshPortfolios.find((p) => p.id === activePortfolio.id);
         console.log('🎯 updated portfolio:', updated);
+        console.log('🎯 updated achievements count:', updated?.achievements.length);
         console.log('🎯 updated achievements:', updated?.achievements);
-        if (updated) setActivePortfolio(updated);
+
+        if (updated) {
+          setActivePortfolio(updated);
+          console.log('🎯 activePortfolio state updated');
+        } else {
+          console.error('❌ Could not find updated portfolio!');
+        }
 
         setShowAchievementForm(false);
 

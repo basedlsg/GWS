@@ -108,68 +108,25 @@ export function generateMeetingDialogueFallback(
   const words = userMessage.split(/\s+/);
 
   // Extract key content words from the user's message (not common words)
-  const contentWords = words.filter(word => {
-    const w = word.toLowerCase().replace(/[^a-z]/g, '');
-    return w.length > 3 && ![
-      'that', 'this', 'with', 'have', 'from', 'they', 'been', 'were', 'what',
-      'when', 'where', 'which', 'would', 'could', 'should', 'about', 'their'
-    ].includes(w);
-  });
+  const contentWords = words
+    .map(word => word.replace(/[^a-zA-Z0-9]/g, '')) // Remove punctuation
+    .filter(word => {
+      const w = word.toLowerCase();
+      return w.length > 3 && ![
+        'that', 'this', 'with', 'have', 'from', 'they', 'been', 'were', 'what',
+        'when', 'where', 'which', 'would', 'could', 'should', 'about', 'their',
+        'your', 'just', 'like', 'some', 'make', 'will', 'more', 'very', 'want'
+      ].includes(w);
+    });
 
   console.log('  - contentWords extracted:', contentWords);
 
   // Build context-aware response that references the user's actual words
-  const firstContentWord = contentWords[0] || 'that';
-  const secondContentWord = contentWords[1] || 'point';
+  const firstContentWord = contentWords[0]?.toLowerCase() || 'your point';
+  const secondContentWord = contentWords[1]?.toLowerCase() || 'that topic';
 
   console.log('  - firstContentWord:', firstContentWord);
   console.log('  - secondContentWord:', secondContentWord);
-
-  // Scenario-specific contextual responses
-  const scenarioResponses = {
-    interview: [
-      `I appreciate you sharing that about ${firstContentWord}. Can you walk me through a specific example of how you've applied this in a real project?`,
-      `That's interesting. When you mention ${firstContentWord}, what specific results or outcomes did you achieve?`,
-      `Good point about ${secondContentWord}. How would you handle a situation where ${firstContentWord} didn't work as planned?`,
-      `I see you have experience with ${firstContentWord}. How does that prepare you for the challenges you'd face in this role?`,
-      `Thanks for that context. Can you tell me more about your thought process when dealing with ${firstContentWord}?`,
-    ],
-    pitch: [
-      `I like what you're saying about ${firstContentWord}. Who specifically is your target customer, and why would they choose you over existing solutions?`,
-      `That's compelling. When you mention ${firstContentWord}, what's your go-to-market strategy and timeline?`,
-      `Interesting approach with ${secondContentWord}. What are the unit economics, and when do you project profitability?`,
-      `I see the vision around ${firstContentWord}. What's the biggest risk to execution, and how are you mitigating it?`,
-      `Good traction with ${firstContentWord}. What are your fundraising needs and how will you deploy the capital?`,
-    ],
-    review: [
-      `Thanks for bringing up ${firstContentWord}. I'd like to understand the impact this had on our key metrics. Can you quantify that?`,
-      `I appreciate your work on ${firstContentWord}. Looking ahead, how do you plan to build on this momentum next quarter?`,
-      `That's a fair point about ${secondContentWord}. What support or resources would help you improve in this area?`,
-      `I hear what you're saying regarding ${firstContentWord}. How do you think you could have approached it differently?`,
-      `Good reflection on ${firstContentWord}. What are your career development goals for the next 6-12 months?`,
-    ],
-    negotiation: [
-      `I understand your position on ${firstContentWord}. From our side, we need to balance that against ${secondContentWord}. What's your flexibility here?`,
-      `That's a reasonable ask regarding ${firstContentWord}. If we can accommodate that, would you be willing to move on ${secondContentWord}?`,
-      `I hear you on ${firstContentWord}. Let's explore some creative options that could work for both sides.`,
-      `Fair point about ${secondContentWord}. What's your ideal outcome, and what's your walk-away point?`,
-      `I appreciate the transparency on ${firstContentWord}. What timeline are you working with for reaching an agreement?`,
-    ],
-    presentation: [
-      `Thank you for that analysis of ${firstContentWord}. What data supports this conclusion, and how confident are you in these projections?`,
-      `Interesting findings on ${firstContentWord}. How do you recommend we prioritize this against ${secondContentWord}?`,
-      `I see your point about ${secondContentWord}. What are the implementation challenges and resource requirements?`,
-      `That's a strong recommendation regarding ${firstContentWord}. What are the risks if we don't act on this?`,
-      `Good presentation. Can you clarify how ${firstContentWord} aligns with our strategic objectives?`,
-    ],
-    custom: [
-      `I appreciate you sharing your thoughts on ${firstContentWord}. Can you elaborate on how this connects to ${secondContentWord}?`,
-      `That's an interesting perspective. When you think about ${firstContentWord}, what specific outcomes are you hoping for?`,
-      `Good point. How have you seen ${firstContentWord} work in practice, and what challenges did you encounter?`,
-      `I understand what you're saying about ${secondContentWord}. What led you to this conclusion?`,
-      `Thanks for that insight on ${firstContentWord}. What would success look like to you?`,
-    ],
-  };
 
   // Content-aware keyword responses (check these first for better relevance)
   if (userLower.includes('hello') || userLower.includes('hi ') || userLower.includes('hey')) {
@@ -185,29 +142,75 @@ export function generateMeetingDialogueFallback(
   }
 
   if (userLower.includes('experience') || userLower.includes('background')) {
-    return `That experience sounds valuable. Can you tell me about a specific challenge you faced in ${firstContentWord} and how you overcame it?`;
+    return `That experience sounds valuable. Can you tell me about a specific challenge you faced and how you overcame it?`;
   }
 
   if (userLower.includes('question') || userLower.includes('ask')) {
-    return `Good question. Regarding ${firstContentWord}, I think the key consideration is ${secondContentWord}. What's your take on that?`;
+    return `Good question. Let me think about that... I believe the key consideration is understanding the full context. What's your take on that?`;
   }
 
   if (userLower.includes('thank') || userLower.includes('appreciate')) {
-    return `You're welcome. Shifting gears, I'd like to hear more about ${firstContentWord}. Can you walk me through your thinking there?`;
+    return `You're welcome. Shifting gears, what else would you like to discuss?`;
   }
 
   if (userLower.includes('challenge') || userLower.includes('difficult')) {
-    return `Challenges are inevitable. When you faced this difficulty with ${firstContentWord}, what specific actions did you take, and what was the result?`;
+    return `Challenges are inevitable. When you faced this difficulty, what specific actions did you take, and what was the result?`;
   }
 
   if (userLower.includes('success') || userLower.includes('achieve')) {
-    return `Success is important. When you achieved results with ${firstContentWord}, what metrics did you use to measure impact?`;
+    return `Success is important. What metrics did you use to measure impact?`;
   }
 
-  // Use scenario-specific responses that reference the user's words
+  // Scenario-specific contextual responses
+  const scenarioResponses: Record<ScenarioType, string[]> = {
+    interview: [
+      `I appreciate you sharing that. Can you walk me through a specific example of how you've applied this in a real project?`,
+      `That's interesting. What specific results or outcomes did you achieve?`,
+      `Good point. How would you handle a situation where things didn't work as planned?`,
+      `I see you have relevant experience. How does that prepare you for the challenges you'd face in this role?`,
+      `Thanks for that context. Can you tell me more about your thought process when dealing with complex problems?`,
+    ],
+    pitch: [
+      `I like what you're saying. Who specifically is your target customer, and why would they choose you over existing solutions?`,
+      `That's compelling. What's your go-to-market strategy and timeline?`,
+      `Interesting approach. What are the unit economics, and when do you project profitability?`,
+      `I see the vision. What's the biggest risk to execution, and how are you mitigating it?`,
+      `Good traction so far. What are your fundraising needs and how will you deploy the capital?`,
+    ],
+    review: [
+      `Thanks for bringing that up. I'd like to understand the impact this had on our key metrics. Can you quantify that?`,
+      `I appreciate your work. Looking ahead, how do you plan to build on this momentum next quarter?`,
+      `That's a fair point. What support or resources would help you improve in this area?`,
+      `I hear what you're saying. How do you think you could have approached it differently?`,
+      `Good reflection. What are your career development goals for the next 6-12 months?`,
+    ],
+    negotiation: [
+      `I understand your position. From our side, we need to balance competing priorities. What's your flexibility here?`,
+      `That's a reasonable ask. If we can accommodate that, would you be willing to make some concessions as well?`,
+      `I hear you. Let's explore some creative options that could work for both sides.`,
+      `Fair point. What's your ideal outcome, and what's your walk-away point?`,
+      `I appreciate the transparency. What timeline are you working with for reaching an agreement?`,
+    ],
+    presentation: [
+      `Thank you for that analysis. What data supports this conclusion, and how confident are you in these projections?`,
+      `Interesting findings. How do you recommend we prioritize this against other initiatives?`,
+      `I see your point. What are the implementation challenges and resource requirements?`,
+      `That's a strong recommendation. What are the risks if we don't act on this?`,
+      `Good presentation. Can you clarify how this aligns with our strategic objectives?`,
+    ],
+    custom: [
+      `I appreciate you sharing your thoughts. Can you elaborate on what you're thinking?`,
+      `That's an interesting perspective. What specific outcomes are you hoping for?`,
+      `Good point. How have you seen this work in practice, and what challenges did you encounter?`,
+      `I understand what you're saying. What led you to this conclusion?`,
+      `Thanks for that insight. What would success look like to you?`,
+    ],
+  };
+
+  // Use scenario-specific responses
   const responses = scenarioResponses[scenarioType] || scenarioResponses.custom;
   const randomIndex = Math.floor(Math.random() * responses.length);
-  const response = responses[randomIndex] || `That's interesting what you said about ${firstContentWord}. Can you tell me more about that?`;
+  const response = responses[randomIndex] || `That's interesting. Can you tell me more about that?`;
 
   console.log('  - Generated response:', response);
 
