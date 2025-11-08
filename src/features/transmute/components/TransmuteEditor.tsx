@@ -20,24 +20,44 @@ export function TransmuteEditor({ text, language, theme, onChange }: TransmuteEd
 
   // Update preview when text, language, or theme changes
   useEffect(() => {
+    console.log('🔍 [Transmute] useEffect triggered');
+    console.log('  - text length:', text.length);
+    console.log('  - language:', language);
+    console.log('  - theme:', theme);
+    console.log('  - previewRef.current:', previewRef.current);
+
     if (previewRef.current) {
       const highlighted = highlightText(text, language, theme);
+      console.log('  - highlighted HTML (first 200 chars):', highlighted.substring(0, 200));
+
       previewRef.current.innerHTML = `<pre>${highlighted}</pre>`;
+      console.log('  - innerHTML set successfully');
+    } else {
+      console.warn('  - previewRef.current is null!');
     }
   }, [text, language, theme]);
 
   // Inject theme-specific CSS
   useEffect(() => {
+    console.log('🎨 [Transmute] Injecting CSS for theme:', theme);
+
     const styleId = 'transmute-theme-styles';
     let styleEl = document.getElementById(styleId) as HTMLStyleElement;
 
     if (!styleEl) {
+      console.log('  - Creating new style element');
       styleEl = document.createElement('style');
       styleEl.id = styleId;
       document.head.appendChild(styleEl);
+    } else {
+      console.log('  - Updating existing style element');
     }
 
-    styleEl.textContent = generateThemeCSS(theme);
+    const css = generateThemeCSS(theme);
+    console.log('  - Generated CSS (first 300 chars):', css.substring(0, 300));
+
+    styleEl.textContent = css;
+    console.log('  - CSS injected successfully');
 
     return () => {
       // Cleanup on unmount

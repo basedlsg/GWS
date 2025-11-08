@@ -10,10 +10,23 @@ import { THEMES, LANGUAGES } from '../constants';
  * Apply syntax highlighting to text
  */
 export function highlightText(text: string, language: string, theme: TransmuteTheme): string {
+  console.log('🎨 [highlightText] Called with:');
+  console.log('  - text:', text.substring(0, 100) + '...');
+  console.log('  - language:', language);
+  console.log('  - theme:', theme);
+
   const lines = text.split('\n');
   const languageInfo = LANGUAGES.find(l => l.id === language);
 
-  return lines.map((line, index) => highlightLine(line, languageInfo?.keywords || [], theme, index + 1)).join('\n');
+  console.log('  - languageInfo:', languageInfo);
+  console.log('  - keywords:', languageInfo?.keywords);
+  console.log('  - number of lines:', lines.length);
+
+  const result = lines.map((line, index) => highlightLine(line, languageInfo?.keywords || [], theme, index + 1)).join('\n');
+
+  console.log('  - result (first 200 chars):', result.substring(0, 200));
+
+  return result;
 }
 
 /**
@@ -23,7 +36,17 @@ function highlightLine(line: string, keywords: string[], theme: TransmuteTheme, 
   const themeConfig = THEMES[theme];
 
   if (!themeConfig) {
+    console.warn(`⚠️ [highlightLine] No theme config found for theme: ${theme}`);
     return line;
+  }
+
+  // Log first line only to avoid spam
+  if (lineNumber === 1) {
+    console.log(`🎨 [highlightLine] Using theme config for "${theme}":`, {
+      backgroundColor: themeConfig.backgroundColor,
+      textColor: themeConfig.textColor,
+      accentColor: themeConfig.accentColor,
+    });
   }
 
   // Line number prefix

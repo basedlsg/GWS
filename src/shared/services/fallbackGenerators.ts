@@ -99,6 +99,11 @@ export function generateMeetingDialogueFallback(
   userMessage: string,
   _conversationHistory: ConversationMessage[]
 ): string {
+  console.log('🗣️ [generateMeetingDialogueFallback] Called with:');
+  console.log('  - scenarioType:', scenarioType);
+  console.log('  - participantRole:', participantRole);
+  console.log('  - userMessage:', userMessage);
+
   const userLower = userMessage.toLowerCase();
   const words = userMessage.split(/\s+/);
 
@@ -111,9 +116,14 @@ export function generateMeetingDialogueFallback(
     ].includes(w);
   });
 
+  console.log('  - contentWords extracted:', contentWords);
+
   // Build context-aware response that references the user's actual words
   const firstContentWord = contentWords[0] || 'that';
   const secondContentWord = contentWords[1] || 'point';
+
+  console.log('  - firstContentWord:', firstContentWord);
+  console.log('  - secondContentWord:', secondContentWord);
 
   // Scenario-specific contextual responses
   const scenarioResponses = {
@@ -197,7 +207,11 @@ export function generateMeetingDialogueFallback(
   // Use scenario-specific responses that reference the user's words
   const responses = scenarioResponses[scenarioType] || scenarioResponses.custom;
   const randomIndex = Math.floor(Math.random() * responses.length);
-  return responses[randomIndex] || `That's interesting what you said about ${firstContentWord}. Can you tell me more about that?`;
+  const response = responses[randomIndex] || `That's interesting what you said about ${firstContentWord}. Can you tell me more about that?`;
+
+  console.log('  - Generated response:', response);
+
+  return response;
 }
 
 /**
@@ -231,7 +245,12 @@ export function generateAchievementNarativeFallback(
  * Attempts to extract structured tasks from free-form text
  */
 export function parseTasksFromText(text: string): Task[] {
+  console.log('📝 [parseTasksFromText] Called with text:', text);
+
   const lines = text.split('\n').filter(line => line.trim().length > 0);
+  console.log('📝 [parseTasksFromText] Number of non-empty lines:', lines.length);
+  console.log('📝 [parseTasksFromText] First 5 lines:', lines.slice(0, 5));
+
   const tasks: Task[] = [];
 
   for (const line of lines) {
@@ -239,6 +258,8 @@ export function parseTasksFromText(text: string): Task[] {
     const taskMatch = line.match(/^[\d\-\*\.]\s*(.+)$/);
     if (taskMatch && taskMatch[1]) {
       const taskText = taskMatch[1].trim();
+
+      console.log(`📝 [parseTasksFromText] Matched task: "${taskText}"`);
 
       // Determine priority based on keywords
       let priority: TaskPriority = 'medium';
@@ -260,6 +281,8 @@ export function parseTasksFromText(text: string): Task[] {
         status: 'pending',
         createdAt: new Date().toISOString(),
       });
+    } else {
+      console.log(`📝 [parseTasksFromText] Skipped line (no match): "${line}"`);
     }
   }
 
