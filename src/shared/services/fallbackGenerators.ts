@@ -41,36 +41,36 @@ export function generateTasksFallback(goal: string, persona: Persona = 'strategi
 
   const personaTemplates = {
     strategic: [
-      { text: `Define clear success metrics for ${mainKeyword}`, priority: 'high' as TaskPriority },
-      { text: `Research best practices and case studies related to ${goal}`, priority: 'high' as TaskPriority },
-      { text: `Create a comprehensive roadmap with milestones`, priority: 'high' as TaskPriority },
-      { text: `Identify potential risks and mitigation strategies`, priority: 'medium' as TaskPriority },
-      { text: `Establish key performance indicators (KPIs)`, priority: 'medium' as TaskPriority },
-      { text: `Schedule regular progress reviews and adjustments`, priority: 'low' as TaskPriority },
+      { text: `[HIGH] Define clear success metrics for ${mainKeyword} (1-2 hours)\n   - Write down 3-5 specific, measurable outcomes\n   - Set target numbers or milestones for each metric\n   - Document baseline/starting point`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Research best practices for ${goal} (2-3 hours)\n   - Search Google Scholar and industry publications\n   - Find 5-10 case studies of similar goals\n   - Bookmark resources at reddit.com/r/productivity`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Create roadmap with weekly milestones (1-2 hours)\n   - Break goal into 4-6 major phases\n   - Assign 1-3 week timeframes to each phase\n   - Use Notion, Trello, or Asana to visualize`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Identify risks and mitigation strategies (1 hour)\n   - List 3-5 potential obstacles\n   - Write backup plan for each obstacle\n   - Schedule weekly risk assessment check-ins`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Establish KPIs and tracking system (1 hour)\n   - Choose 3-5 key performance indicators\n   - Set up spreadsheet or app for tracking\n   - Schedule daily/weekly measurement times`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Schedule progress review calendar (30 min)\n   - Block weekly 15-min review sessions\n   - Set monthly deep-dive analysis time\n   - Create review template/questions`, priority: 'low' as TaskPriority },
     ],
     tactical: [
-      { text: `Break down ${goal} into weekly actionable items`, priority: 'high' as TaskPriority },
-      { text: `Set up daily tracking system for progress`, priority: 'high' as TaskPriority },
-      { text: `Allocate specific time blocks for ${mainKeyword} work`, priority: 'high' as TaskPriority },
-      { text: `Create a checklist of immediate next actions`, priority: 'medium' as TaskPriority },
-      { text: `Identify tools and resources needed`, priority: 'medium' as TaskPriority },
-      { text: `Set up accountability system or find an accountability partner`, priority: 'low' as TaskPriority },
+      { text: `[HIGH] Break ${goal} into this week's actions (1 hour)\n   - List 5-10 specific actions for next 7 days\n   - Assign each action to a specific day\n   - Estimate time needed for each action`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Set up daily tracking system (30 min)\n   - Download habit tracker app (Habitica, Streaks, Way of Life)\n   - Create daily checklist in phone or notebook\n   - Set phone reminders for key tasks`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Block calendar time for ${mainKeyword} work (30 min)\n   - Find 2-3 consistent time slots per week\n   - Block time in Google Calendar or phone\n   - Set recurring calendar alerts`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Create immediate action checklist (45 min)\n   - List all tasks needed to start today\n   - Order by what must happen first\n   - Identify the single most important next step`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] List required tools and resources (30 min)\n   - Write down apps, books, courses needed\n   - Research free vs paid options\n   - Purchase or download top 2-3 essentials`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Find accountability partner or system (1 hour)\n   - Post in relevant Reddit community or Facebook group\n   - Ask friend or colleague to check in weekly\n   - Join online accountability group (Focusmate, coach.me)`, priority: 'low' as TaskPriority },
     ],
     creative: [
-      { text: `Brainstorm innovative approaches to ${mainKeyword}`, priority: 'high' as TaskPriority },
-      { text: `Explore unconventional methods and perspectives`, priority: 'high' as TaskPriority },
-      { text: `Create a vision board or visual representation of ${goal}`, priority: 'medium' as TaskPriority },
-      { text: `Find inspiring examples and case studies`, priority: 'medium' as TaskPriority },
-      { text: `Experiment with different techniques and iterate`, priority: 'medium' as TaskPriority },
-      { text: `Document creative insights and breakthroughs`, priority: 'low' as TaskPriority },
+      { text: `[HIGH] Brainstorm 20+ approaches to ${mainKeyword} (1 hour)\n   - Set 20-minute timer for rapid ideation\n   - Use mind mapping (Miro, Coggle, or paper)\n   - Don't filter - capture all ideas`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Research unconventional methods (2 hours)\n   - Search "[your goal] unconventional methods"\n   - Watch 3-5 TED talks or YouTube videos\n   - Browse r/UnconventionalLifeProTips`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Create vision board for ${goal} (1-2 hours)\n   - Collect 15-20 inspiring images\n   - Use Canva, Pinterest, or physical poster\n   - Place somewhere you'll see daily`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Find 5-10 inspiring examples (1-2 hours)\n   - Search success stories on Medium or blogs\n   - Join relevant Facebook or LinkedIn groups\n   - Save case studies to Evernote or Notion`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Run 3 small experiments this week (ongoing)\n   - Try different techniques for 2-3 days each\n   - Document what works and what doesn't\n   - Iterate based on results`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Start insights journal (15 min/day)\n   - Create document or notebook\n   - Write daily reflections and discoveries\n   - Review weekly for patterns`, priority: 'low' as TaskPriority },
     ],
     philosophical: [
-      { text: `Reflect on why ${goal} matters to you personally`, priority: 'high' as TaskPriority },
-      { text: `Identify underlying values and principles driving this goal`, priority: 'high' as TaskPriority },
-      { text: `Consider how ${mainKeyword} aligns with your life purpose`, priority: 'medium' as TaskPriority },
-      { text: `Examine potential obstacles from multiple perspectives`, priority: 'medium' as TaskPriority },
-      { text: `Develop a philosophical framework for decision-making`, priority: 'low' as TaskPriority },
-      { text: `Journal about the deeper meaning of this journey`, priority: 'low' as TaskPriority },
+      { text: `[HIGH] Reflect deeply on why ${goal} matters (1 hour)\n   - Write 500 words on personal significance\n   - Ask "why" 5 times to find root motivation\n   - Identify connection to core values`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Identify values driving this goal (1 hour)\n   - List 5-10 personal values\n   - Rank which values this goal serves\n   - Write how goal expresses each value`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Examine alignment with life purpose (1-2 hours)\n   - Write personal mission statement\n   - Map how ${mainKeyword} fits larger vision\n   - Identify any misalignments to address`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Analyze obstacles from multiple perspectives (1 hour)\n   - Write obstacles from 3 viewpoints\n   - Consider worst/best/most likely scenarios\n   - Find lessons in each potential challenge`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Create decision-making framework (1 hour)\n   - Define 3-5 guiding principles\n   - Write criteria for tough choices\n   - Test framework on a sample decision`, priority: 'low' as TaskPriority },
+      { text: `[LOW] Begin meaning journal (15 min/day)\n   - Write about journey significance\n   - Record insights and growth\n   - Review monthly for deeper patterns`, priority: 'low' as TaskPriority },
     ],
   };
 
@@ -87,69 +87,117 @@ export function generateTasksFallback(goal: string, persona: Persona = 'strategi
 
 /**
  * Generate meeting dialogue based on scenario
- * @param scenario - Meeting scenario details
+ * @param scenarioType - Type of meeting scenario
+ * @param participantRole - Role of the AI participant
  * @param userMessage - User's message
  * @param conversationHistory - Previous messages
  * @returns AI response message
  */
 export function generateMeetingDialogueFallback(
   scenarioType: ScenarioType,
-  _participantRole: ParticipantRole,
+  participantRole: ParticipantRole,
   userMessage: string,
-  conversationHistory: ConversationMessage[]
+  _conversationHistory: ConversationMessage[]
 ): string {
-  const isFirstMessage = conversationHistory.length === 0;
+  const userLower = userMessage.toLowerCase();
+  const words = userMessage.split(/\s+/);
 
-  // Scenario-specific opening responses
-  const openingResponses = {
-    interview: `Thank you for joining us today. I've reviewed your background and I'm impressed. Let's start with: Can you tell me about a challenging project you've worked on recently and how you approached it?`,
-    pitch: `Welcome! I appreciate you taking the time to present today. I've looked over your pitch deck briefly. Before we dive into the details, can you give me the 30-second elevator pitch of what you're building?`,
-    review: `Thanks for meeting with me today. I wanted to discuss your recent work and performance. Overall, I've seen some strong contributions. Let's talk about your key achievements this quarter and where you see opportunities for growth.`,
-    negotiation: `I appreciate you coming to the table. I think we both want to find a mutually beneficial arrangement here. Let's start by aligning on our respective priorities and constraints. What are your key objectives?`,
-    presentation: `Thank you for this presentation. I'm particularly interested in understanding the strategic implications. Could you walk me through your main findings and recommendations?`,
-    custom: `I'm glad we could connect today. I'm interested in hearing your perspective on this. What would you like to discuss?`,
+  // Extract key content words from the user's message (not common words)
+  const contentWords = words.filter(word => {
+    const w = word.toLowerCase().replace(/[^a-z]/g, '');
+    return w.length > 3 && ![
+      'that', 'this', 'with', 'have', 'from', 'they', 'been', 'were', 'what',
+      'when', 'where', 'which', 'would', 'could', 'should', 'about', 'their'
+    ].includes(w);
+  });
+
+  // Build context-aware response that references the user's actual words
+  const firstContentWord = contentWords[0] || 'that';
+  const secondContentWord = contentWords[1] || 'point';
+
+  // Scenario-specific contextual responses
+  const scenarioResponses = {
+    interview: [
+      `I appreciate you sharing that about ${firstContentWord}. Can you walk me through a specific example of how you've applied this in a real project?`,
+      `That's interesting. When you mention ${firstContentWord}, what specific results or outcomes did you achieve?`,
+      `Good point about ${secondContentWord}. How would you handle a situation where ${firstContentWord} didn't work as planned?`,
+      `I see you have experience with ${firstContentWord}. How does that prepare you for the challenges you'd face in this role?`,
+      `Thanks for that context. Can you tell me more about your thought process when dealing with ${firstContentWord}?`,
+    ],
+    pitch: [
+      `I like what you're saying about ${firstContentWord}. Who specifically is your target customer, and why would they choose you over existing solutions?`,
+      `That's compelling. When you mention ${firstContentWord}, what's your go-to-market strategy and timeline?`,
+      `Interesting approach with ${secondContentWord}. What are the unit economics, and when do you project profitability?`,
+      `I see the vision around ${firstContentWord}. What's the biggest risk to execution, and how are you mitigating it?`,
+      `Good traction with ${firstContentWord}. What are your fundraising needs and how will you deploy the capital?`,
+    ],
+    review: [
+      `Thanks for bringing up ${firstContentWord}. I'd like to understand the impact this had on our key metrics. Can you quantify that?`,
+      `I appreciate your work on ${firstContentWord}. Looking ahead, how do you plan to build on this momentum next quarter?`,
+      `That's a fair point about ${secondContentWord}. What support or resources would help you improve in this area?`,
+      `I hear what you're saying regarding ${firstContentWord}. How do you think you could have approached it differently?`,
+      `Good reflection on ${firstContentWord}. What are your career development goals for the next 6-12 months?`,
+    ],
+    negotiation: [
+      `I understand your position on ${firstContentWord}. From our side, we need to balance that against ${secondContentWord}. What's your flexibility here?`,
+      `That's a reasonable ask regarding ${firstContentWord}. If we can accommodate that, would you be willing to move on ${secondContentWord}?`,
+      `I hear you on ${firstContentWord}. Let's explore some creative options that could work for both sides.`,
+      `Fair point about ${secondContentWord}. What's your ideal outcome, and what's your walk-away point?`,
+      `I appreciate the transparency on ${firstContentWord}. What timeline are you working with for reaching an agreement?`,
+    ],
+    presentation: [
+      `Thank you for that analysis of ${firstContentWord}. What data supports this conclusion, and how confident are you in these projections?`,
+      `Interesting findings on ${firstContentWord}. How do you recommend we prioritize this against ${secondContentWord}?`,
+      `I see your point about ${secondContentWord}. What are the implementation challenges and resource requirements?`,
+      `That's a strong recommendation regarding ${firstContentWord}. What are the risks if we don't act on this?`,
+      `Good presentation. Can you clarify how ${firstContentWord} aligns with our strategic objectives?`,
+    ],
+    custom: [
+      `I appreciate you sharing your thoughts on ${firstContentWord}. Can you elaborate on how this connects to ${secondContentWord}?`,
+      `That's an interesting perspective. When you think about ${firstContentWord}, what specific outcomes are you hoping for?`,
+      `Good point. How have you seen ${firstContentWord} work in practice, and what challenges did you encounter?`,
+      `I understand what you're saying about ${secondContentWord}. What led you to this conclusion?`,
+      `Thanks for that insight on ${firstContentWord}. What would success look like to you?`,
+    ],
   };
 
-  if (isFirstMessage) {
-    return openingResponses[scenarioType] || openingResponses.custom;
+  // Content-aware keyword responses (check these first for better relevance)
+  if (userLower.includes('hello') || userLower.includes('hi ') || userLower.includes('hey')) {
+    const roleGreetings: Record<ParticipantRole, string> = {
+      interviewer: `Hi, thanks for coming in today. I'd like to start by having you tell me a bit about yourself and why you're interested in this role.`,
+      investor: `Good to meet you! I've looked over your materials briefly. Why don't you start with your elevator pitch?`,
+      manager: `Hey, thanks for making time. I wanted to touch base about your recent work and discuss where you're headed.`,
+      client: `Hello! I'm looking forward to learning more about what you're proposing. What brings you here today?`,
+      colleague: `Hi there! Great to connect. What would you like to discuss?`,
+      custom: `Hello! I'm glad we could connect today. What would you like to discuss?`,
+    };
+    return roleGreetings[participantRole];
   }
 
-  // Generate contextual follow-up responses
-  const responses = [
-    `That's an interesting point. Can you elaborate on how that would work in practice?`,
-    `I see what you're saying. How does that align with your overall strategy?`,
-    `Good insight. What challenges do you anticipate in implementing that approach?`,
-    `I appreciate that perspective. Can you give me a concrete example?`,
-    `That makes sense. What metrics would you use to measure success here?`,
-    `Interesting approach. Have you considered alternative solutions?`,
-    `I understand. What would be your timeline for achieving those milestones?`,
-    `That's a valid point. How would you handle potential obstacles or setbacks?`,
-    `I see the value in that. What resources would you need to make it happen?`,
-    `Fair enough. Let's explore that further. What are the key dependencies?`,
-  ];
+  if (userLower.includes('experience') || userLower.includes('background')) {
+    return `That experience sounds valuable. Can you tell me about a specific challenge you faced in ${firstContentWord} and how you overcame it?`;
+  }
 
-  // Select response based on message content
-  const userLower = userMessage.toLowerCase();
+  if (userLower.includes('question') || userLower.includes('ask')) {
+    return `Good question. Regarding ${firstContentWord}, I think the key consideration is ${secondContentWord}. What's your take on that?`;
+  }
+
+  if (userLower.includes('thank') || userLower.includes('appreciate')) {
+    return `You're welcome. Shifting gears, I'd like to hear more about ${firstContentWord}. Can you walk me through your thinking there?`;
+  }
 
   if (userLower.includes('challenge') || userLower.includes('difficult')) {
-    return `Challenges are opportunities for growth. How did you approach overcoming that specific challenge?`;
+    return `Challenges are inevitable. When you faced this difficulty with ${firstContentWord}, what specific actions did you take, and what was the result?`;
   }
 
-  if (userLower.includes('timeline') || userLower.includes('when')) {
-    return `Timeline is important. What factors influence your proposed schedule, and how confident are you in meeting those deadlines?`;
+  if (userLower.includes('success') || userLower.includes('achieve')) {
+    return `Success is important. When you achieved results with ${firstContentWord}, what metrics did you use to measure impact?`;
   }
 
-  if (userLower.includes('cost') || userLower.includes('budget')) {
-    return `Budget considerations are crucial. Can you break down the cost structure and explain the return on investment?`;
-  }
-
-  if (userLower.includes('team') || userLower.includes('people')) {
-    return `Team dynamics are key. How do you plan to build and manage the team needed for this initiative?`;
-  }
-
-  // Default to random contextual response
+  // Use scenario-specific responses that reference the user's words
+  const responses = scenarioResponses[scenarioType] || scenarioResponses.custom;
   const randomIndex = Math.floor(Math.random() * responses.length);
-  return responses[randomIndex] || 'That\'s an interesting perspective. Can you tell me more about that?';
+  return responses[randomIndex] || `That's interesting what you said about ${firstContentWord}. Can you tell me more about that?`;
 }
 
 /**

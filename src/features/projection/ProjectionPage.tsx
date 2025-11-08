@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu';
 import { useToast } from '@/shared/hooks/use-toast';
-import { useGeminiAPI } from '@/shared/hooks/useGeminiAPI';
+import { useAI } from '@/shared/hooks/useAI';
 import { ScenarioSetup } from './components/ScenarioSetup';
 import { ConversationView } from './components/ConversationView';
 import { MessageInput } from './components/MessageInput';
@@ -52,7 +52,7 @@ import type { ProjectionSession, MeetingScenario, ConversationMessage, VoiceSett
 
 export function ProjectionPage() {
   const { toast } = useToast();
-  const { generateMeetingResponse, isGenerating, hasAPIKey } = useGeminiAPI();
+  const { generateCompletion, isLoading, isConfigured } = useAI();
 
   const [activeSession, setActiveSession] = useState<ProjectionSession | null>(null);
   const [savedSessions, setSavedSessions] = useState<ProjectionSession[]>([]);
@@ -132,17 +132,33 @@ export function ProjectionPage() {
     try {
       const conversationHistory = [...(updated?.messages || []), userMessage];
 
-      const response = await generateMeetingResponse(
-        activeSession.scenario.type,
-        activeSession.scenario.participantRole,
-        content,
-        conversationHistory
-      );
+      // Build conversation history for context
+      const historyText = conversationHistory
+        .slice(-6) // Last 6 messages for context
+        .map(msg => `${msg.role === 'user' ? 'You' : 'Participant'}: ${msg.content}`)
+        .join('\n');
+
+      const prompt = `You are simulating a ${activeSession.scenario.type} scenario. You are playing the role of a ${activeSession.scenario.participantRole}.
+
+${activeSession.scenario.context ? `Scenario context: ${activeSession.scenario.context}` : ''}
+
+${historyText ? `Conversation so far:\n${historyText}\n` : ''}
+
+Respond to the following message in character. Be realistic, professional, and challenging but fair. Reference specific details from the conversation. Ask follow-up questions to simulate a real ${activeSession.scenario.type}.
+
+User: ${content}
+
+Participant response:`;
+
+      const response = await generateCompletion(prompt, {
+        temperature: 0.8,
+        maxTokens: 300,
+      });
 
       const assistantMessage: ConversationMessage = {
         id: generateMessageId(),
         role: 'assistant',
-        content: response,
+        content: response.text,
         timestamp: new Date().toISOString(),
       };
 
@@ -157,7 +173,7 @@ export function ProjectionPage() {
 
       // Auto-play response if enabled
       if (voiceSettings.autoPlay) {
-        handleSpeak(response);
+        handleSpeak(response.text);
       }
     } catch (error) {
       toast({
@@ -316,7 +332,7 @@ export function ProjectionPage() {
 
       {/* Scenario Setup */}
       {!activeSession && (
-        <ScenarioSetup onStart={handleStartScenario} hasAPIKey={hasAPIKey} />
+        <ScenarioSetup onStart={handleStartScenario} hasAPIKey={isConfigured} />
       )}
 
       {/* Active Conversation */}
@@ -337,13 +353,13 @@ export function ProjectionPage() {
           <ConversationView
             messages={activeSession.messages}
             participantRole={activeSession.scenario.participantRole}
-            isLoading={isGenerating}
+            isLoading={isLoading}
           />
 
           {/* Message Input */}
           <MessageInput
             onSend={handleSendMessage}
-            isLoading={isGenerating}
+            isLoading={isLoading}
             placeholder="Type your response to the conversation..."
           />
         </div>
@@ -384,9 +400,9 @@ export function ProjectionPage() {
             <strong>5. Export & review</strong> - Download your conversation to review your responses and improve
           </p>
           <p className="pt-2 border-t">
-            <strong>💡 Tip:</strong> {hasAPIKey
+            <strong>💡 Tip:</strong> {isConfigured
               ? 'You\'re using AI mode for realistic, context-aware dialogue!'
-              : 'Add a Gemini API key in Settings for AI-powered conversations. Template mode provides useful practice too!'}
+              : 'Add a Groq or Gemini API key in Settings for AI-powered conversations. Template mode provides useful practice too!'}
           </p>
         </CardContent>
       </Card>

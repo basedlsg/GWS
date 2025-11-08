@@ -10,7 +10,8 @@ import { Button } from '@/shared/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Separator } from '@/shared/components/ui/separator';
 import { useToast } from '@/shared/hooks/use-toast';
-import { useGeminiAPI } from '@/shared/hooks/useGeminiAPI';
+import { useAI } from '@/shared/hooks/useAI';
+import { parseTasksFromText } from '@/shared/services/fallbackGenerators';
 import { GoalInput } from './components/GoalInput';
 import { TaskList } from './components/TaskList';
 import { SessionList } from './components/SessionList';
@@ -27,7 +28,7 @@ import type { DistillationSession, Persona, TaskStatus } from './types';
 
 export function DistillationPage() {
   const { toast } = useToast();
-  const { generateTasks, isGenerating, hasAPIKey } = useGeminiAPI();
+  const { generateCompletion, isLoading, isConfigured } = useAI();
 
   const [activeSession, setActiveSession] = useState<DistillationSession | null>(null);
   const [savedSessions, setSavedSessions] = useState<DistillationSession[]>([]);
@@ -42,9 +43,31 @@ export function DistillationPage() {
   // Handle generating tasks from a goal
   const handleGenerateTasks = async (goal: string, persona: Persona) => {
     try {
-      const tasks = await generateTasks(goal, persona);
+      const prompt = `You are a ${persona} productivity coach. Break down this goal into 6-8 specific, actionable tasks with detailed sub-steps. Each task should be concrete and measurable.
 
-      const newSession = createSession(goal, persona, tasks, hasAPIKey);
+Goal: ${goal}
+
+For each task, provide:
+1. The main action (what needs to be done)
+2. 2-3 specific sub-steps
+3. Time estimate
+4. Priority level (high/medium/low)
+
+Format as a numbered list. Be specific about resources, tools, and concrete actions. Example:
+1. [HIGH PRIORITY] Research and evaluate project management tools (2 hours)
+   - Visit asana.com, monday.com, and trello.com
+   - Compare features and pricing for teams of 5-10
+   - Read reviews on g2.com and capterra.com`;
+
+      const response = await generateCompletion(prompt, {
+        temperature: 0.7,
+        maxTokens: 1000,
+      });
+
+      // Parse tasks from response
+      const tasks = parseTasksFromText(response.text);
+
+      const newSession = createSession(goal, persona, tasks, isConfigured);
       setActiveSession(newSession);
       setSavedSessions(loadSessions());
 
@@ -156,8 +179,8 @@ export function DistillationPage() {
       {!activeSession && (
         <GoalInput
           onSubmit={handleGenerateTasks}
-          isGenerating={isGenerating}
-          hasAPIKey={hasAPIKey}
+          isGenerating={isLoading}
+          hasAPIKey={isConfigured}
         />
       )}
 
@@ -208,9 +231,9 @@ export function DistillationPage() {
             <strong>4. Export</strong> - Download your action plan as Markdown, JSON, CSV, or plain text
           </p>
           <p className="pt-2 border-t">
-            <strong>💡 Tip:</strong> {hasAPIKey
+            <strong>💡 Tip:</strong> {isConfigured
               ? 'You\'re using AI mode for intelligent, context-aware task generation!'
-              : 'Add a Gemini API key in Settings for AI-powered task generation. Template mode works great too!'}
+              : 'Add a Groq or Gemini API key in Settings for AI-powered task generation. Template mode works great too!'}
           </p>
         </CardContent>
       </Card>
