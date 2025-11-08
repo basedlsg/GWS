@@ -52,7 +52,7 @@ import type { ProjectionSession, MeetingScenario, ConversationMessage, VoiceSett
 
 export function ProjectionPage() {
   const { toast } = useToast();
-  const { generateCompletion, isLoading, isConfigured } = useAI();
+  const { generateCompletion, isLoading } = useAI();
 
   const [activeSession, setActiveSession] = useState<ProjectionSession | null>(null);
   const [savedSessions, setSavedSessions] = useState<ProjectionSession[]>([]);
@@ -153,6 +153,15 @@ Participant response:`;
       const response = await generateCompletion(prompt, {
         temperature: 0.8,
         maxTokens: 300,
+      }, async () => {
+        // Fallback to template dialogue
+        const { generateMeetingDialogueFallback } = await import('@/shared/services/fallbackGenerators');
+        return generateMeetingDialogueFallback(
+          activeSession.scenario.type,
+          activeSession.scenario.participantRole,
+          content,
+          conversationHistory
+        );
       });
 
       const assistantMessage: ConversationMessage = {
@@ -332,7 +341,7 @@ Participant response:`;
 
       {/* Scenario Setup */}
       {!activeSession && (
-        <ScenarioSetup onStart={handleStartScenario} hasAPIKey={isConfigured} />
+        <ScenarioSetup onStart={handleStartScenario}  />
       )}
 
       {/* Active Conversation */}
@@ -400,9 +409,7 @@ Participant response:`;
             <strong>5. Export & review</strong> - Download your conversation to review your responses and improve
           </p>
           <p className="pt-2 border-t">
-            <strong>💡 Tip:</strong> {isConfigured
-              ? 'You\'re using AI mode for realistic, context-aware dialogue!'
-              : 'Add a Groq or Gemini API key in Settings for AI-powered conversations. Template mode provides useful practice too!'}
+            <strong>💡 Tip:</strong> Take your time to respond thoughtfully. Use voice playback to practice hearing the conversation flow naturally.
           </p>
         </CardContent>
       </Card>

@@ -62,6 +62,11 @@ Format as a numbered list. Be specific about resources, tools, and concrete acti
       const response = await generateCompletion(prompt, {
         temperature: 0.7,
         maxTokens: 1000,
+      }, async () => {
+        // Fallback to template generation
+        const { generateTasksFallback } = await import('@/shared/services/fallbackGenerators');
+        const tasks = generateTasksFallback(goal, persona);
+        return tasks.map((t, i) => `${i + 1}. ${t.text}`).join('\n');
       });
 
       // Parse tasks from response
@@ -76,6 +81,7 @@ Format as a numbered list. Be specific about resources, tools, and concrete acti
         description: `Generated ${tasks.length} tasks for your goal`,
       });
     } catch (error) {
+      console.error('Error generating tasks:', error);
       toast({
         title: 'Error',
         description: 'Failed to generate tasks. Please try again.',
@@ -180,7 +186,7 @@ Format as a numbered list. Be specific about resources, tools, and concrete acti
         <GoalInput
           onSubmit={handleGenerateTasks}
           isGenerating={isLoading}
-          hasAPIKey={isConfigured}
+          
         />
       )}
 
@@ -231,9 +237,7 @@ Format as a numbered list. Be specific about resources, tools, and concrete acti
             <strong>4. Export</strong> - Download your action plan as Markdown, JSON, CSV, or plain text
           </p>
           <p className="pt-2 border-t">
-            <strong>💡 Tip:</strong> {isConfigured
-              ? 'You\'re using AI mode for intelligent, context-aware task generation!'
-              : 'Add a Groq or Gemini API key in Settings for AI-powered task generation. Template mode works great too!'}
+            <strong>💡 Tip:</strong> Be specific with your goals for better task breakdown. The more context you provide, the more actionable your tasks will be.
           </p>
         </CardContent>
       </Card>

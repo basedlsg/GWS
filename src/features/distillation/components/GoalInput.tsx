@@ -15,17 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Badge } from '@/shared/components/ui/badge';
+// import { Badge } from '@/shared/components/ui/badge';
 import { PERSONA_INFO, EXAMPLE_GOALS } from '../constants';
 import type { Persona } from '../types';
 
 interface GoalInputProps {
   onSubmit: (goal: string, persona: Persona) => void;
   isGenerating: boolean;
-  hasAPIKey: boolean;
+  hasAPIKey?: boolean; // Optional for backward compatibility
 }
 
-export function GoalInput({ onSubmit, isGenerating, hasAPIKey }: GoalInputProps) {
+export function GoalInput({ onSubmit, isGenerating }: GoalInputProps) {
   const [goal, setGoal] = useState('');
   const [persona, setPersona] = useState<Persona>('strategic');
   const [showExamples, setShowExamples] = useState(false);
@@ -47,20 +47,13 @@ export function GoalInput({ onSubmit, isGenerating, hasAPIKey }: GoalInputProps)
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Enter Your Goal
-            </CardTitle>
-            <CardDescription>
-              Describe what you want to achieve. Be specific or abstract - we'll break it down either way.
-            </CardDescription>
-          </div>
-          <Badge variant={hasAPIKey ? 'default' : 'secondary'}>
-            {hasAPIKey ? '✨ AI Mode' : '📝 Template Mode'}
-          </Badge>
-        </div>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          Enter Your Goal
+        </CardTitle>
+        <CardDescription>
+          Describe what you want to achieve. Be specific or abstract - we'll break it down either way.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -160,13 +153,6 @@ export function GoalInput({ onSubmit, isGenerating, hasAPIKey }: GoalInputProps)
               </>
             )}
           </Button>
-
-          {/* Info Message */}
-          {!hasAPIKey && (
-            <p className="text-xs text-muted-foreground text-center">
-              💡 Add a Gemini API key in Settings for AI-powered task generation
-            </p>
-          )}
         </form>
       </CardContent>
     </Card>

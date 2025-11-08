@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/shared/components/ui/select';
-import { Badge } from '@/shared/components/ui/badge';
+// import { Badge } from '@/shared/components/ui/badge';
 import {
   SCENARIO_TYPE_INFO,
   PARTICIPANT_ROLE_INFO,
@@ -26,10 +26,10 @@ import type { ScenarioType, ParticipantRole, ScenarioTemplate, MeetingScenario }
 
 interface ScenarioSetupProps {
   onStart: (scenario: MeetingScenario) => void;
-  hasAPIKey: boolean;
+  hasAPIKey?: boolean; // Optional for backward compatibility
 }
 
-export function ScenarioSetup({ onStart, hasAPIKey }: ScenarioSetupProps) {
+export function ScenarioSetup({ onStart }: ScenarioSetupProps) {
   const [title, setTitle] = useState('');
   const [scenarioType, setScenarioType] = useState<ScenarioType>('interview');
   const [participantRole, setParticipantRole] = useState<ParticipantRole>('interviewer');
@@ -74,9 +74,6 @@ export function ScenarioSetup({ onStart, hasAPIKey }: ScenarioSetupProps) {
               Configure the scenario you want to practice. AI will simulate realistic conversation.
             </CardDescription>
           </div>
-          <Badge variant={hasAPIKey ? 'default' : 'secondary'}>
-            {hasAPIKey ? '✨ AI Mode' : '📝 Template Mode'}
-          </Badge>
         </div>
       </CardHeader>
       <CardContent>
@@ -207,13 +204,6 @@ export function ScenarioSetup({ onStart, hasAPIKey }: ScenarioSetupProps) {
             <Play className="h-4 w-4" />
             Start Simulation
           </Button>
-
-          {/* Info Message */}
-          {!hasAPIKey && (
-            <p className="text-xs text-muted-foreground text-center">
-              💡 Add a Gemini API key in Settings for AI-powered realistic dialogue
-            </p>
-          )}
         </form>
       </CardContent>
     </Card>
