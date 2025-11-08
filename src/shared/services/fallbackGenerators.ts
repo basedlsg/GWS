@@ -247,43 +247,93 @@ export function generateAchievementNarativeFallback(
 export function parseTasksFromText(text: string): Task[] {
   console.log('📝 [parseTasksFromText] Called with text:', text);
 
-  const lines = text.split('\n').filter(line => line.trim().length > 0);
-  console.log('📝 [parseTasksFromText] Number of non-empty lines:', lines.length);
-  console.log('📝 [parseTasksFromText] First 5 lines:', lines.slice(0, 5));
+  const lines = text.split('\n');
+  console.log('📝 [parseTasksFromText] Total lines (including empty):', lines.length);
 
   const tasks: Task[] = [];
+  let currentTask: string | null = null;
+  let currentSubSteps: string[] = [];
 
-  for (const line of lines) {
-    // Look for numbered lists, bullet points, or task-like patterns
-    const taskMatch = line.match(/^[\d\-\*\.]\s*(.+)$/);
-    if (taskMatch && taskMatch[1]) {
-      const taskText = taskMatch[1].trim();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
 
-      console.log(`📝 [parseTasksFromText] Matched task: "${taskText}"`);
+    if (!line) continue; // Skip undefined lines
 
-      // Determine priority based on keywords
-      let priority: TaskPriority = 'medium';
-      if (taskText.toLowerCase().includes('critical') ||
-          taskText.toLowerCase().includes('urgent') ||
-          taskText.toLowerCase().includes('first') ||
-          taskText.toLowerCase().includes('immediately')) {
-        priority = 'high';
-      } else if (taskText.toLowerCase().includes('later') ||
-                 taskText.toLowerCase().includes('optional') ||
-                 taskText.toLowerCase().includes('nice to have')) {
-        priority = 'low';
+    // Check if this is a main task (starts with number or bullet, not indented)
+    const mainTaskMatch = line.match(/^(\d+[\.\)]|\-|\*)\s+(.+)$/);
+
+    if (mainTaskMatch && mainTaskMatch[2]) {
+      // Save previous task if exists
+      if (currentTask) {
+        const fullTaskText = currentSubSteps.length > 0
+          ? `${currentTask}\n${currentSubSteps.join('\n')}`
+          : currentTask;
+
+        console.log(`📝 [parseTasksFromText] Saving task: "${fullTaskText.substring(0, 100)}..."`);
+
+        // Determine priority based on keywords
+        let priority: TaskPriority = 'medium';
+        const lowerText = fullTaskText.toLowerCase();
+        if (lowerText.includes('[high') || lowerText.includes('critical') ||
+            lowerText.includes('urgent') || lowerText.includes('first') ||
+            lowerText.includes('immediately')) {
+          priority = 'high';
+        } else if (lowerText.includes('[low') || lowerText.includes('later') ||
+                   lowerText.includes('optional') || lowerText.includes('nice to have')) {
+          priority = 'low';
+        } else if (lowerText.includes('[med')) {
+          priority = 'medium';
+        }
+
+        tasks.push({
+          id: generateId(),
+          text: fullTaskText,
+          priority,
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        });
       }
 
-      tasks.push({
-        id: generateId(),
-        text: taskText,
-        priority,
-        status: 'pending',
-        createdAt: new Date().toISOString(),
-      });
-    } else {
-      console.log(`📝 [parseTasksFromText] Skipped line (no match): "${line}"`);
+      // Start new task
+      currentTask = mainTaskMatch[2].trim();
+      currentSubSteps = [];
+      console.log(`📝 [parseTasksFromText] Started new task: "${currentTask}"`);
+
+    } else if (line.trim().length > 0 && currentTask) {
+      // This is a sub-step or continuation of current task (indented or starts with -)
+      const indentedMatch = line.match(/^\s+(.+)$/);
+      if (indentedMatch) {
+        currentSubSteps.push(line); // Keep the indentation for formatting
+        console.log(`📝 [parseTasksFromText] Added sub-step: "${line.trim()}"`);
+      }
     }
+  }
+
+  // Save the last task
+  if (currentTask) {
+    const fullTaskText = currentSubSteps.length > 0
+      ? `${currentTask}\n${currentSubSteps.join('\n')}`
+      : currentTask;
+
+    console.log(`📝 [parseTasksFromText] Saving final task: "${fullTaskText.substring(0, 100)}..."`);
+
+    let priority: TaskPriority = 'medium';
+    const lowerText = fullTaskText.toLowerCase();
+    if (lowerText.includes('[high') || lowerText.includes('critical') ||
+        lowerText.includes('urgent') || lowerText.includes('first')) {
+      priority = 'high';
+    } else if (lowerText.includes('[low') || lowerText.includes('later') ||
+               lowerText.includes('optional')) {
+      priority = 'low';
+    }
+
+    tasks.push({
+      id: generateId(),
+      text: fullTaskText,
+      priority,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    });
   }
 
   // If no tasks found in expected format, treat each line as a task
