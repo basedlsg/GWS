@@ -1,21 +1,219 @@
+/**
+ * DistillationPage
+ * Main page for the Distillation feature
+ * Converts abstract goals into concrete, actionable task lists
+ */
+
+import { useState, useEffect } from 'react';
+import { Target, RotateCcw } from 'lucide-react';
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Separator } from '@/shared/components/ui/separator';
+import { useToast } from '@/shared/hooks/use-toast';
+import { useGeminiAPI } from '@/shared/hooks/useGeminiAPI';
+import { GoalInput } from './components/GoalInput';
+import { TaskList } from './components/TaskList';
+import { SessionList } from './components/SessionList';
+import {
+  loadSessions,
+  createSession,
+  deleteSession,
+  getActiveSession,
+  setActiveSessionId,
+  updateTaskInSession,
+  deleteTaskFromSession,
+} from './utils/storage';
+import type { DistillationSession, Persona, TaskStatus } from './types';
+
 export function DistillationPage() {
+  const { toast } = useToast();
+  const { generateTasks, isGenerating, hasAPIKey } = useGeminiAPI();
+
+  const [activeSession, setActiveSession] = useState<DistillationSession | null>(null);
+  const [savedSessions, setSavedSessions] = useState<DistillationSession[]>([]);
+
+  // Load initial data
+  useEffect(() => {
+    setSavedSessions(loadSessions());
+    const active = getActiveSession();
+    setActiveSession(active);
+  }, []);
+
+  // Handle generating tasks from a goal
+  const handleGenerateTasks = async (goal: string, persona: Persona) => {
+    try {
+      const tasks = await generateTasks(goal, persona);
+
+      const newSession = createSession(goal, persona, tasks, hasAPIKey);
+      setActiveSession(newSession);
+      setSavedSessions(loadSessions());
+
+      toast({
+        title: 'Success!',
+        description: `Generated ${tasks.length} tasks for your goal`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to generate tasks. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle task status change
+  const handleTaskStatusChange = (taskId: string, status: TaskStatus) => {
+    if (!activeSession) return;
+
+    const success = updateTaskInSession(activeSession.id, taskId, { status });
+
+    if (success) {
+      const updated = loadSessions().find((s) => s.id === activeSession.id);
+      if (updated) {
+        setActiveSession(updated);
+        setSavedSessions(loadSessions());
+      }
+    }
+  };
+
+  // Handle task deletion
+  const handleTaskDelete = (taskId: string) => {
+    if (!activeSession) return;
+
+    const success = deleteTaskFromSession(activeSession.id, taskId);
+
+    if (success) {
+      const updated = loadSessions().find((s) => s.id === activeSession.id);
+      if (updated) {
+        setActiveSession(updated);
+        setSavedSessions(loadSessions());
+      }
+
+      toast({
+        title: 'Deleted',
+        description: 'Task removed from session',
+      });
+    }
+  };
+
+  // Handle session selection
+  const handleSessionSelect = (session: DistillationSession) => {
+    setActiveSession(session);
+    setActiveSessionId(session.id);
+  };
+
+  // Handle session deletion
+  const handleSessionDelete = (id: string) => {
+    const success = deleteSession(id);
+
+    if (success) {
+      setSavedSessions(loadSessions());
+
+      if (activeSession?.id === id) {
+        setActiveSession(null);
+      }
+    }
+  };
+
+  // Handle creating new session
+  const handleNewSession = () => {
+    setActiveSession(null);
+    setActiveSessionId(null);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">⚗️ Distillation</h1>
-        <p className="text-muted-foreground">
-          Convert abstract goals and vague ambitions into concrete, actionable task lists
+      {/* Header */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="h-8 w-8 text-primary" />
+            <h1 className="text-4xl font-bold">Distillation</h1>
+          </div>
+
+          {activeSession && (
+            <Button variant="outline" onClick={handleNewSession} className="gap-2">
+              <RotateCcw className="h-4 w-4" />
+              New Session
+            </Button>
+          )}
+        </div>
+        <p className="text-lg text-muted-foreground">
+          Transform abstract goals into concrete, actionable task lists
         </p>
       </div>
 
-      <div className="p-8 rounded-lg border bg-card text-center">
-        <p className="text-lg text-muted-foreground">
-          Distillation feature coming soon...
-        </p>
-        <p className="text-sm text-muted-foreground mt-2">
-          AI-powered breakdown of goals into specific, measurable tasks
-        </p>
-      </div>
+      {/* Active Session Header */}
+      {activeSession && (
+        <Card className="bg-primary/5 border-primary">
+          <CardHeader>
+            <CardTitle className="text-base">Active Goal: {activeSession.goal}</CardTitle>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Goal Input */}
+      {!activeSession && (
+        <GoalInput
+          onSubmit={handleGenerateTasks}
+          isGenerating={isGenerating}
+          hasAPIKey={hasAPIKey}
+        />
+      )}
+
+      {/* Task List */}
+      {activeSession && (
+        <TaskList
+          session={activeSession}
+          onTaskStatusChange={handleTaskStatusChange}
+          onTaskDelete={handleTaskDelete}
+        />
+      )}
+
+      {/* Saved Sessions */}
+      {savedSessions.length > 0 && (
+        <>
+          <Separator />
+          <SessionList
+            sessions={savedSessions}
+            activeSessionId={activeSession?.id || null}
+            onSessionSelect={handleSessionSelect}
+            onSessionDelete={handleSessionDelete}
+          />
+        </>
+      )}
+
+      {/* Info Card */}
+      <Card className="bg-muted/50">
+        <CardHeader>
+          <CardTitle className="text-base">How it works</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            <strong>1. Enter your goal</strong> - Be as specific or abstract as you like. "Get in shape" or "Build a 6-figure business" both work.
+          </p>
+          <p>
+            <strong>2. Choose an approach</strong> - Select a persona that matches your preferred working style:
+          </p>
+          <ul className="list-disc list-inside ml-4 space-y-1">
+            <li><strong>Coach:</strong> Motivating, milestone-focused tasks</li>
+            <li><strong>Analyst:</strong> Logical, systematic breakdown</li>
+            <li><strong>Creative:</strong> Innovative, exploratory approaches</li>
+            <li><strong>Pragmatist:</strong> Practical, efficient action items</li>
+          </ul>
+          <p>
+            <strong>3. Track progress</strong> - Mark tasks as in-progress or completed as you work through them
+          </p>
+          <p>
+            <strong>4. Export</strong> - Download your action plan as Markdown, JSON, CSV, or plain text
+          </p>
+          <p className="pt-2 border-t">
+            <strong>💡 Tip:</strong> {hasAPIKey
+              ? 'You\'re using AI mode for intelligent, context-aware task generation!'
+              : 'Add a Gemini API key in Settings for AI-powered task generation. Template mode works great too!'}
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
