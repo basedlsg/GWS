@@ -7,7 +7,7 @@ import type { TransmuteTheme } from '../types';
 import { THEMES, LANGUAGES } from '../constants';
 
 /**
- * Apply syntax highlighting to text
+ * Transform plain text into code-like syntax with styling
  */
 export function highlightText(text: string, language: string, theme: TransmuteTheme): string {
   console.log('🎨 [highlightText] Called with:');
@@ -15,89 +15,103 @@ export function highlightText(text: string, language: string, theme: TransmuteTh
   console.log('  - language:', language);
   console.log('  - theme:', theme);
 
-  const lines = text.split('\n');
-  const languageInfo = LANGUAGES.find(l => l.id === language);
+  const themeConfig = THEMES[theme];
+  if (!themeConfig) {
+    console.warn('⚠️ No theme config found');
+    return text;
+  }
 
-  console.log('  - languageInfo:', languageInfo);
-  console.log('  - keywords:', languageInfo?.keywords);
+  const lines = text.split('\n');
   console.log('  - number of lines:', lines.length);
 
-  const result = lines.map((line, index) => highlightLine(line, languageInfo?.keywords || [], theme, index + 1)).join('\n');
+  const result = lines.map((line, index) => transformLineToCode(line, theme, themeConfig, index + 1)).join('\n');
 
-  console.log('  - result (first 200 chars):', result.substring(0, 200));
+  console.log('  - result (first 300 chars):', result.substring(0, 300));
 
   return result;
 }
 
 /**
- * Highlight a single line
+ * Transform a line of plain text into code-like syntax
  */
-function highlightLine(line: string, keywords: string[], theme: TransmuteTheme, lineNumber: number): string {
-  const themeConfig = THEMES[theme];
-
-  if (!themeConfig) {
-    console.warn(`⚠️ [highlightLine] No theme config found for theme: ${theme}`);
-    return line;
-  }
-
-  // Log first line only to avoid spam
-  if (lineNumber === 1) {
-    console.log(`🎨 [highlightLine] Using theme config for "${theme}":`, {
-      backgroundColor: themeConfig.backgroundColor,
-      textColor: themeConfig.textColor,
-      accentColor: themeConfig.accentColor,
-    });
-  }
-
+function transformLineToCode(line: string, _theme: TransmuteTheme, themeConfig: any, lineNumber: number): string {
   // Line number prefix
   const lineNumPrefix = `<span class="line-number" style="color: ${themeConfig.secondaryColor}; opacity: 0.5; margin-right: 1em; user-select: none;">${lineNumber.toString().padStart(3, ' ')} │ </span>`;
 
-  // Check for markdown headers
-  if (line.startsWith('#')) {
-    const headerMatch = line.match(/^(#+)\s+(.+)$/);
-    if (headerMatch) {
-      const hashes = headerMatch[1];
-      const content = headerMatch[2];
-      return `${lineNumPrefix}<span class="header" style="color: ${themeConfig.accentColor}; font-weight: bold; text-shadow: ${themeConfig.glowEffect || 'none'};">${hashes} ${content}</span>`;
-    }
+  // Empty lines
+  if (!line.trim()) {
+    return lineNumPrefix;
   }
 
-  // Check for list items
-  if (line.match(/^\s*[-*]\s/)) {
-    const parts = line.split(/^(\s*[-*]\s)/);
-    return `${lineNumPrefix}<span class="list-marker" style="color: ${themeConfig.accentColor};">${parts[1] || ''}</span><span style="color: ${themeConfig.textColor};">${parts[2] || ''}</span>`;
+  // Check if line starts with # (header) - treat as comment
+  if (line.trim().startsWith('#')) {
+    const headerText = line.trim().substring(1).trim();
+    return `${lineNumPrefix}<span style="color: ${themeConfig.secondaryColor}; opacity: 0.7;">// ${headerText}</span>`;
   }
 
-  // Highlight keywords
-  let highlighted = line;
-  keywords.forEach(keyword => {
-    const regex = new RegExp(`\\b(${escapeRegex(keyword)})\\b`, 'gi');
-    highlighted = highlighted.replace(
-      regex,
-      `<span class="keyword" style="color: ${themeConfig.accentColor}; font-weight: 600; text-shadow: ${themeConfig.glowEffect || 'none'};">$1</span>`
-    );
-  });
+  // Check if line starts with - or * (bullet point) - transform to array item or object property
+  if (line.trim().match(/^[-*]\s+/)) {
+    const content = line.trim().replace(/^[-*]\s+/, '');
+    const patterns = [
+      // Array item
+      `<span style="color: ${themeConfig.accentColor};">  </span><span style="color: ${themeConfig.secondaryColor};">"${content}"</span><span style="color: ${themeConfig.textColor};">,</span>`,
+      // Object property
+      `<span style="color: ${themeConfig.accentColor};">  ${makeVarName(content)}</span><span style="color: ${themeConfig.textColor};">: </span><span style="color: ${themeConfig.secondaryColor};">"${content}"</span><span style="color: ${themeConfig.textColor};">,</span>`,
+    ];
+    return lineNumPrefix + patterns[lineNumber % 2];
+  }
 
-  // Highlight quoted text
-  highlighted = highlighted.replace(
-    /"([^"]+)"/g,
-    `<span class="string" style="color: ${themeConfig.secondaryColor};">"$1"</span>`
-  );
+  // Regular text - transform into various code patterns
+  const patterns = [
+    // Const declaration
+    () => {
+      const varName = makeVarName(line);
+      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">const</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span><span style="color: ${themeConfig.textColor};">;</span>`;
+    },
+    // Function call
+    () => {
+      const funcName = makeVarName(line);
+      return `<span style="color: ${themeConfig.accentColor};">${funcName}</span><span style="color: ${themeConfig.textColor};">(</span><span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span><span style="color: ${themeConfig.textColor};">);</span>`;
+    },
+    // Object property
+    () => {
+      const key = makeVarName(line);
+      return `<span style="color: ${themeConfig.textColor};">{</span> <span style="color: ${themeConfig.accentColor};">${key}</span><span style="color: ${themeConfig.textColor};">:</span> <span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span> <span style="color: ${themeConfig.textColor};">}</span>`;
+    },
+    // Arrow function
+    () => {
+      const param = makeVarName(line).substring(0, 8);
+      return `<span style="color: ${themeConfig.textColor};">(</span><span style="color: ${themeConfig.accentColor};">${param}</span><span style="color: ${themeConfig.textColor};">) </span><span style="color: ${themeConfig.accentColor}; font-weight: 600;">=></span> <span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span>`;
+    },
+    // Return statement
+    () => {
+      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">return</span> <span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span><span style="color: ${themeConfig.textColor};">;</span>`;
+    },
+  ];
 
-  // Highlight numbers
-  highlighted = highlighted.replace(
-    /\b(\d+)\b/g,
-    `<span class="number" style="color: ${themeConfig.secondaryColor};">$1</span>`
-  );
+  // Use line number to deterministically pick a pattern (so same line always gets same style)
+  const patternIndex = lineNumber % patterns.length;
+  const selectedPattern = patterns[patternIndex];
+  const codeLine = selectedPattern ? selectedPattern() : line;
 
-  return `${lineNumPrefix}<span style="color: ${themeConfig.textColor};">${highlighted}</span>`;
+  return lineNumPrefix + codeLine;
 }
 
 /**
- * Escape regex special characters
+ * Convert text to a variable/function name
  */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function makeVarName(text: string): string {
+  // Take first few words, remove special chars, camelCase
+  const words = text.trim().toLowerCase().split(/\s+/).slice(0, 3);
+  if (words.length === 0) return 'value';
+
+  const cleaned = words.map((word, i) => {
+    const clean = word.replace(/[^a-z0-9]/g, '');
+    if (i === 0) return clean;
+    return clean.charAt(0).toUpperCase() + clean.slice(1);
+  }).filter(w => w.length > 0);
+
+  return cleaned.join('') || 'value';
 }
 
 /**
