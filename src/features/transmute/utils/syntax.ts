@@ -49,52 +49,74 @@ function transformLineToCode(line: string, _theme: TransmuteTheme, themeConfig: 
     return `${lineNumPrefix}<span style="color: ${themeConfig.secondaryColor}; opacity: 0.7;">// ${headerText}</span>`;
   }
 
-  // Check if line starts with - or * (bullet point) - transform to array item or object property
+  // Check if line starts with - or * (bullet point) - transform to hex array
   if (line.trim().match(/^[-*]\s+/)) {
-    const content = line.trim().replace(/^[-*]\s+/, '');
-    const patterns = [
-      // Array item
-      `<span style="color: ${themeConfig.accentColor};">  </span><span style="color: ${themeConfig.secondaryColor};">"${content}"</span><span style="color: ${themeConfig.textColor};">,</span>`,
-      // Object property
-      `<span style="color: ${themeConfig.accentColor};">  ${makeVarName(content)}</span><span style="color: ${themeConfig.textColor};">: </span><span style="color: ${themeConfig.secondaryColor};">"${content}"</span><span style="color: ${themeConfig.textColor};">,</span>`,
-    ];
-    return lineNumPrefix + patterns[lineNumber % 2];
+    const hexValues = generateHexFromText(line, 3);
+    return `${lineNumPrefix}<span style="color: ${themeConfig.textColor};">  [</span><span style="color: ${themeConfig.secondaryColor};">${hexValues.join(', ')}</span><span style="color: ${themeConfig.textColor};">],</span>`;
   }
 
-  // Regular text - transform into various code patterns
+  // Regular text - transform into various obfuscated code patterns
   const patterns = [
-    // Const declaration
+    // Hex assignment with bitwise operations
     () => {
-      const varName = makeVarName(line);
-      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">const</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span><span style="color: ${themeConfig.textColor};">;</span>`;
+      const varName = makeVarName(line).substring(0, 8);
+      const hex1 = randomHex();
+      const hex2 = randomHex();
+      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">const</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${hex1} ^ ${hex2}</span><span style="color: ${themeConfig.textColor};">;</span>`;
     },
-    // Function call
+    // Function with hex return
     () => {
-      const funcName = makeVarName(line);
-      return `<span style="color: ${themeConfig.accentColor};">${funcName}</span><span style="color: ${themeConfig.textColor};">(</span><span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span><span style="color: ${themeConfig.textColor};">);</span>`;
+      const funcName = makeVarName(line).substring(0, 8);
+      const hexArray = generateHexFromText(line, 4);
+      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">function</span> <span style="color: ${themeConfig.accentColor};">${funcName}</span><span style="color: ${themeConfig.textColor};">()</span> <span style="color: ${themeConfig.textColor};">{ return [</span><span style="color: ${themeConfig.secondaryColor};">${hexArray.join(', ')}</span><span style="color: ${themeConfig.textColor};">]; }</span>`;
     },
-    // Object property
+    // Variable with encoded value
     () => {
-      const key = makeVarName(line);
-      return `<span style="color: ${themeConfig.textColor};">{</span> <span style="color: ${themeConfig.accentColor};">${key}</span><span style="color: ${themeConfig.textColor};">:</span> <span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span> <span style="color: ${themeConfig.textColor};">}</span>`;
+      const varName = '_' + randomHex().substring(2);
+      const encodedValue = randomHex();
+      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">var</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${encodedValue}</span><span style="color: ${themeConfig.textColor};">;</span>`;
     },
-    // Arrow function
+    // Array with multiple hex values
     () => {
-      const param = makeVarName(line).substring(0, 8);
-      return `<span style="color: ${themeConfig.textColor};">(</span><span style="color: ${themeConfig.accentColor};">${param}</span><span style="color: ${themeConfig.textColor};">) </span><span style="color: ${themeConfig.accentColor}; font-weight: 600;">=></span> <span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span>`;
+      const hexArray = generateHexFromText(line, 5);
+      return `<span style="color: ${themeConfig.textColor};">const _data = [</span><span style="color: ${themeConfig.secondaryColor};">${hexArray.join(', ')}</span><span style="color: ${themeConfig.textColor};">];</span>`;
     },
-    // Return statement
+    // Bitwise operation
     () => {
-      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">return</span> <span style="color: ${themeConfig.secondaryColor};">"${line.trim()}"</span><span style="color: ${themeConfig.textColor};">;</span>`;
+      const varName = makeVarName(line).substring(0, 6);
+      const num1 = Math.floor(Math.random() * 255);
+      const num2 = Math.floor(Math.random() * 255);
+      return `<span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${num1} << ${num2 % 8}</span><span style="color: ${themeConfig.textColor};">;</span>`;
     },
   ];
 
-  // Use line number to deterministically pick a pattern (so same line always gets same style)
+  // Use line number to deterministically pick a pattern
   const patternIndex = lineNumber % patterns.length;
   const selectedPattern = patterns[patternIndex];
   const codeLine = selectedPattern ? selectedPattern() : line;
 
   return lineNumPrefix + codeLine;
+}
+
+/**
+ * Generate hex values from text (for encoding appearance)
+ */
+function generateHexFromText(text: string, count: number): string[] {
+  const hexValues: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const charCode = text.charCodeAt(i % text.length) || 65;
+    const offset = i * 13; // Add variation
+    const hex = '0x' + ((charCode + offset) % 256).toString(16).padStart(2, '0');
+    hexValues.push(hex);
+  }
+  return hexValues;
+}
+
+/**
+ * Generate random hex value
+ */
+function randomHex(): string {
+  return '0x' + Math.floor(Math.random() * 0xFFFF).toString(16).padStart(4, '0');
 }
 
 /**

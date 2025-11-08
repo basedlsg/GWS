@@ -63,7 +63,7 @@ export function TaskItem({ task, onStatusChange, onDelete }: TaskItemProps) {
       {/* Task Content */}
       <div className="flex-1 min-w-0">
         <p
-          className={`text-sm ${
+          className={`text-sm whitespace-pre-wrap ${
             isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'
           }`}
         >
