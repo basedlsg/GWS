@@ -74,12 +74,29 @@ export function AchievementForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📝 Form submitted!');
-    console.log('📝 title:', title);
-    console.log('📝 targetDate:', targetDate);
+    console.log('📝 [AchievementForm] Form submitted!');
+    console.log('📝 [AchievementForm] title:', title);
+    console.log('📝 [AchievementForm] description:', description);
+    console.log('📝 [AchievementForm] targetDate:', targetDate);
+    console.log('📝 [AchievementForm] category:', category);
+    console.log('📝 [AchievementForm] status:', status);
 
-    if (!title.trim() || !targetDate) {
-      console.warn('⚠️ Form validation failed - missing title or targetDate');
+    // Validation with user feedback
+    if (!title.trim()) {
+      console.error('❌ [AchievementForm] Validation failed: title is empty');
+      alert('Please enter a title for your achievement');
+      return;
+    }
+
+    if (!description.trim()) {
+      console.error('❌ [AchievementForm] Validation failed: description is empty');
+      alert('Please enter a description for your achievement');
+      return;
+    }
+
+    if (!targetDate) {
+      console.error('❌ [AchievementForm] Validation failed: targetDate is empty');
+      alert('Please select a target date');
       return;
     }
 
@@ -96,7 +113,8 @@ export function AchievementForm({
       narrative: narrative.trim() || undefined,
     };
 
-    console.log('📝 Calling onSubmit with:', achievementData);
+    console.log('✅ [AchievementForm] Validation passed! Calling onSubmit with:', achievementData);
+    console.log('✅ [AchievementForm] Achievement data structure:', JSON.stringify(achievementData, null, 2));
     onSubmit(achievementData);
   };
 
