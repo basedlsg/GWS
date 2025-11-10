@@ -50,17 +50,26 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
   );
 
   // Migration: Update settings with Groq API key from environment if not already set
+  // Run only once on mount to avoid infinite loops
   useEffect(() => {
     const envGroqKey = import.meta.env.VITE_GROQ_API_KEY;
     if (envGroqKey && !settings.groqApiKey) {
-      console.log('🔧 Migrating settings: Adding Groq API key and setting as default provider');
+      console.log('🔧 [SettingsProvider] Loading Groq API key from environment');
+      console.log('  - Key found:', envGroqKey.substring(0, 10) + '...');
+      console.log('  - Setting as default provider: groq');
+
       setSettings(prev => ({
         ...prev,
         groqApiKey: envGroqKey,
         preferredAIProvider: 'groq', // Set Groq as default
       }));
+    } else if (settings.groqApiKey) {
+      console.log('✓ [SettingsProvider] Groq API key already configured');
+      console.log('  - Preferred provider:', settings.preferredAIProvider);
+    } else {
+      console.log('⚠️ [SettingsProvider] No Groq API key found in environment or settings');
     }
-  }, [settings.groqApiKey, setSettings]); // Run when groqApiKey changes
+  }, []); // Run only once on mount
 
   /**
    * Update top-level settings

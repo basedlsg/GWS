@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Code2, Target, MessageSquare, Trophy, Sparkles, Lock, Zap, ArrowRight } from 'lucide-react';
+import { Code2, Target, MessageSquare, Trophy, Sparkles, Lock, Zap, ArrowRight, Bug } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { Badge } from '@/shared/components/ui/badge';
 import { useSettings } from '@/shared/hooks/useSettings';
+import { DebugPanel } from '@/shared/components/DebugPanel';
 
 export function LandingPage() {
   const { hasGeminiApiKey } = useSettings();
+  const [showDebug, setShowDebug] = useState(false);
 
   const features = [
     {
@@ -348,6 +351,22 @@ export function LandingPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Debug Panel (Development) */}
+      <div className="space-y-4">
+        <div className="flex justify-center">
+          <Button
+            onClick={() => setShowDebug(!showDebug)}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <Bug className="h-4 w-4" />
+            {showDebug ? 'Hide' : 'Show'} Debug Panel
+          </Button>
+        </div>
+        {showDebug && <DebugPanel />}
+      </div>
 
       {/* Footer CTA */}
       <div className="text-center space-y-4 pt-8">
