@@ -43,34 +43,44 @@ export function DistillationPage() {
   // Handle generating tasks from a goal
   const handleGenerateTasks = async (goal: string, persona: Persona) => {
     try {
-      const prompt = `You are a ${persona} productivity coach helping someone achieve this SPECIFIC goal: "${goal}"
+      const prompt = `You are an expert ${persona} coach. Your task: create hyper-specific, actionable tasks for this EXACT goal: "${goal}"
 
-CRITICAL: Generate tasks that are 100% relevant to "${goal}". Do NOT include generic academic research tasks like "search Google Scholar" unless the goal is explicitly academic. Focus on PRACTICAL, ACTIONABLE steps specific to this exact goal.
+STRICT RULES:
+1. Every task MUST directly relate to "${goal}" - NO generic advice
+2. Be ultra-specific with websites, tools, numbers, and actions
+3. NO academic research (Google Scholar, research papers) unless goal is academic
+4. Use actual brand names, specific websites, concrete numbers
+5. Sub-steps must be detailed enough that someone could do them TODAY
 
-Break down "${goal}" into 6-8 specific, actionable tasks with detailed sub-steps. Each task must:
-- Be directly related to "${goal}" (not generic advice)
-- Include 2-3 concrete sub-steps with specific details
-- Have realistic time estimates
-- Be prioritized as HIGH, MEDIUM, or LOW
+BAD EXAMPLE (too generic):
+- Research options
+- Make a plan
+- Gather information
 
-Format each task as:
-1. [PRIORITY] Main task description (time estimate)
-   - Specific sub-step 1 with concrete details
-   - Specific sub-step 2 with concrete details
-   - Specific sub-step 3 with concrete details
+GOOD EXAMPLE (specific and actionable):
+- Go to edmunds.com and compare Honda Civic vs Toyota Corolla pricing
+- Call Bank of America at 1-800-xxx-xxxx for auto loan pre-approval
+- List your top 3 must-have features (ex: backup camera, good MPG, under $25k)
 
-EXAMPLE for goal "buying a car":
-1. [HIGH] Determine your budget and financing options (3 hours)
-   - Calculate maximum monthly payment based on current income
-   - Check credit score at annualcreditreport.com
-   - Get pre-approval quotes from bank, credit union, and dealer financing
+For goal "${goal}", generate 6-8 tasks. Format:
 
-2. [HIGH] Research car models that fit your needs and budget (4 hours)
-   - List must-have features (seats, cargo space, fuel economy, safety ratings)
-   - Compare 3-5 models on edmunds.com and kbb.com
-   - Read owner reviews on cars.com focusing on reliability
+1. [HIGH] Main task (time estimate)
+   - Ultra-specific sub-step with exact website/tool/action
+   - Ultra-specific sub-step with exact website/tool/action
+   - Ultra-specific sub-step with exact website/tool/action
 
-Now generate tasks for: "${goal}"`;
+EXAMPLE for "buying a car":
+1. [HIGH] Determine exact budget and financing (2-3 hours)
+   - Calculate max monthly payment: current income × 0.15 = affordable payment
+   - Check credit score FREE at annualcreditreport.com or creditkarma.com
+   - Get 3 pre-approval quotes: your bank, local credit union, dealer website
+
+2. [HIGH] Research specific car models in your price range (3-4 hours)
+   - List EXACTLY what you need: seats (5?), cargo space (how much?), MPG (30+?)
+   - Compare 3-5 models on edmunds.com - check used vs new pricing
+   - Read actual owner reviews on cars.com - filter by year and model
+
+Now generate for "${goal}" with this level of specificity:`;
 
       const response = await generateCompletion(prompt, {
         temperature: 0.7,

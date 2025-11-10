@@ -138,28 +138,34 @@ export function ProjectionPage() {
         .map(msg => `${msg.role === 'user' ? 'You' : 'Participant'}: ${msg.content}`)
         .join('\n');
 
-      const prompt = `You are simulating a realistic ${activeSession.scenario.type} scenario. You are playing the role of a ${activeSession.scenario.participantRole}.
+      const prompt = `You MUST respond ONLY to what the user ACTUALLY said. Do NOT give generic responses.
 
-${activeSession.scenario.context ? `SCENARIO CONTEXT: ${activeSession.scenario.context}` : ''}
+ROLE: You are a ${activeSession.scenario.participantRole} in a ${activeSession.scenario.type}.
+${activeSession.scenario.context ? `\nCONTEXT: ${activeSession.scenario.context}` : ''}
 
-${historyText ? `CONVERSATION HISTORY (this is critical context):\n${historyText}\n` : ''}
+${historyText ? `WHAT THEY SAID BEFORE:\n${historyText}\n` : ''}
 
-CURRENT USER MESSAGE: "${content}"
+WHAT THEY JUST SAID: "${content}"
 
-CRITICAL INSTRUCTIONS:
-1. Stay in character as the ${activeSession.scenario.participantRole}
-2. Respond DIRECTLY to what the user just said ("${content}")
-3. Reference SPECIFIC details from their message - quote their exact words when relevant
-4. Build on previous conversation - mention things discussed earlier
-5. Ask relevant follow-up questions based on what they said
-6. Be realistic and challenging but fair
-7. Do NOT give generic responses - make every response specific to this exact conversation
+MANDATORY RESPONSE RULES:
+1. You MUST quote or reference specific words from "${content}" in your response
+2. You MUST ask a follow-up question about something specific they mentioned
+3. FORBIDDEN: Generic phrases like "tell me about yourself", "that's interesting", "walk me through"
+4. REQUIRED: Use their exact words, technologies, numbers, details
+5. If they mention a skill/tool/number - ASK ABOUT THAT SPECIFIC THING
 
-Example of GOOD response: "You mentioned you have 5 years of experience in ${content.split(' ').slice(0, 3).join(' ')}. Can you tell me about a specific challenge you faced?"
+CORRECT EXAMPLE if user said "I built a chat app with WebSockets":
+"You built a chat app with WebSockets - interesting choice. What specific challenges did you face with the WebSocket implementation? Did you handle reconnection logic?"
 
-Example of BAD response: "That's interesting. Tell me about yourself." (too generic, doesn't reference their actual message)
+WRONG EXAMPLE (DO NOT DO THIS):
+"That's great experience. Can you tell me more about your projects?"
 
-Your response as ${activeSession.scenario.participantRole}:`;
+Now respond to: "${content}"
+
+Your response MUST:
+- Quote at least 1-2 specific words/phrases from "${content}"
+- Ask about something specific they mentioned
+- Stay in character as ${activeSession.scenario.participantRole}`;
 
       const response = await generateCompletion(prompt, {
         temperature: 0.8,

@@ -92,10 +92,42 @@ function transformLineToCode(line: string, _theme: TransmuteTheme, themeConfig: 
       const num2 = Math.floor(Math.random() * 255);
       return `${indentSpan}<span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${num1} << ${num2 % 8}</span><span style="color: ${themeConfig.textColor};">;</span>`;
     },
+    // Arrow function
+    () => {
+      const varName = makeVarName(line).substring(0, 8);
+      const hexVal = randomHex();
+      return `${indentSpan}<span style="color: ${themeConfig.accentColor}; font-weight: 600;">const</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.textColor};">()</span> <span style="color: ${themeConfig.accentColor};">=></span> <span style="color: ${themeConfig.secondaryColor};">${hexVal}</span><span style="color: ${themeConfig.textColor};">;</span>`;
+    },
+    // Class property
+    () => {
+      const propName = makeVarName(line).substring(0, 8);
+      const hexArray = generateHexFromText(line, 3);
+      return `${indentSpan}<span style="color: ${themeConfig.accentColor}; font-weight: 600;">this</span><span style="color: ${themeConfig.textColor};">.</span><span style="color: ${themeConfig.textColor};">${propName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">[${hexArray.join(', ')}]</span><span style="color: ${themeConfig.textColor};">;</span>`;
+    },
+    // Async operation
+    () => {
+      const funcName = makeVarName(line).substring(0, 8);
+      const hexVal = randomHex();
+      return `${indentSpan}<span style="color: ${themeConfig.accentColor}; font-weight: 600;">await</span> <span style="color: ${themeConfig.accentColor};">${funcName}</span><span style="color: ${themeConfig.textColor};">(</span><span style="color: ${themeConfig.secondaryColor};">${hexVal}</span><span style="color: ${themeConfig.textColor};">);</span>`;
+    },
+    // Object property
+    () => {
+      const key = makeVarName(line).substring(0, 8);
+      const hexArray = generateHexFromText(line, 2);
+      return `${indentSpan}<span style="color: ${themeConfig.textColor};">{ </span><span style="color: ${themeConfig.textColor};">${key}</span><span style="color: ${themeConfig.textColor};">:</span> <span style="color: ${themeConfig.secondaryColor};">[${hexArray.join(', ')}]</span> <span style="color: ${themeConfig.textColor};">},</span>`;
+    },
+    // Ternary operation
+    () => {
+      const varName = makeVarName(line).substring(0, 6);
+      const hex1 = randomHex();
+      const hex2 = randomHex();
+      return `${indentSpan}<span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">?</span> <span style="color: ${themeConfig.secondaryColor};">${hex1}</span> <span style="color: ${themeConfig.accentColor};">:</span> <span style="color: ${themeConfig.secondaryColor};">${hex2}</span><span style="color: ${themeConfig.textColor};">;</span>`;
+    },
   ];
 
-  // Use line number to deterministically pick a pattern
-  const patternIndex = lineNumber % patterns.length;
+  // Use hash of text content + line number for pattern selection (more dynamic)
+  const textHash = line.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const patternIndex = (lineNumber + textHash) % patterns.length;
   const selectedPattern = patterns[patternIndex];
   const codeLine = selectedPattern ? selectedPattern() : indentSpan + line;
 
