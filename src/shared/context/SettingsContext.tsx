@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo } from 'react';
+import { createContext, useCallback, useMemo, useEffect } from 'react';
 import { useLocalStorage } from '@/shared/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/shared/utils/constants';
 import {
@@ -48,6 +48,19 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     STORAGE_KEYS.SETTINGS,
     DEFAULT_SETTINGS
   );
+
+  // Migration: Update settings with Groq API key from environment if not already set
+  useEffect(() => {
+    const envGroqKey = import.meta.env.VITE_GROQ_API_KEY;
+    if (envGroqKey && !settings.groqApiKey) {
+      console.log('🔧 Migrating settings: Adding Groq API key and setting as default provider');
+      setSettings(prev => ({
+        ...prev,
+        groqApiKey: envGroqKey,
+        preferredAIProvider: 'groq', // Set Groq as default
+      }));
+    }
+  }, [settings.groqApiKey, setSettings]); // Run when groqApiKey changes
 
   /**
    * Update top-level settings

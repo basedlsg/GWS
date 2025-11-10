@@ -3,7 +3,7 @@
  * Main editor with live preview
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Textarea } from '@/shared/components/ui/textarea';
 import { highlightText, generateThemeCSS } from '../utils/syntax';
 import type { TransmuteTheme } from '../types';
@@ -17,25 +17,46 @@ interface TransmuteEditorProps {
 
 export function TransmuteEditor({ text, language, theme, onChange }: TransmuteEditorProps) {
   const previewRef = useRef<HTMLDivElement>(null);
+  const [debouncedText, setDebouncedText] = useState(text);
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Update preview when text, language, or theme changes
+  // Debounce text updates to improve performance
   useEffect(() => {
-    console.log('🔍 [Transmute] useEffect triggered');
-    console.log('  - text length:', text.length);
-    console.log('  - language:', language);
-    console.log('  - theme:', theme);
-    console.log('  - previewRef.current:', previewRef.current);
-
-    if (previewRef.current) {
-      const highlighted = highlightText(text, language, theme);
-      console.log('  - highlighted HTML (first 200 chars):', highlighted.substring(0, 200));
-
-      previewRef.current.innerHTML = `<pre>${highlighted}</pre>`;
-      console.log('  - innerHTML set successfully');
-    } else {
-      console.warn('  - previewRef.current is null!');
+    // Clear existing timeout
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
     }
-  }, [text, language, theme]);
+
+    // Set new timeout - update preview after 150ms of no typing
+    updateTimeoutRef.current = setTimeout(() => {
+      setDebouncedText(text);
+    }, 150);
+
+    // Cleanup
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, [text]);
+
+  // Update preview when debounced text, language, or theme changes
+  useEffect(() => {
+    if (!previewRef.current) {
+      console.warn('  - previewRef.current is null!');
+      return;
+    }
+
+    // Use requestAnimationFrame for smoother rendering
+    const frameId = requestAnimationFrame(() => {
+      if (previewRef.current) {
+        const highlighted = highlightText(debouncedText, language, theme);
+        previewRef.current.innerHTML = `<pre>${highlighted}</pre>`;
+      }
+    });
+
+    return () => cancelAnimationFrame(frameId);
+  }, [debouncedText, language, theme]);
 
   // Inject theme-specific CSS
   useEffect(() => {

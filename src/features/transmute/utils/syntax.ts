@@ -43,16 +43,20 @@ function transformLineToCode(line: string, _theme: TransmuteTheme, themeConfig: 
     return lineNumPrefix;
   }
 
+  // Extract leading whitespace to preserve indentation
+  const leadingWhitespace = line.match(/^(\s*)/)?.[1] || '';
+  const indentSpan = leadingWhitespace ? `<span style="white-space: pre;">${leadingWhitespace}</span>` : '';
+
   // Check if line starts with # (header) - treat as comment
   if (line.trim().startsWith('#')) {
     const headerText = line.trim().substring(1).trim();
-    return `${lineNumPrefix}<span style="color: ${themeConfig.secondaryColor}; opacity: 0.7;">// ${headerText}</span>`;
+    return `${lineNumPrefix}${indentSpan}<span style="color: ${themeConfig.secondaryColor}; opacity: 0.7;">// ${headerText}</span>`;
   }
 
   // Check if line starts with - or * (bullet point) - transform to hex array
   if (line.trim().match(/^[-*]\s+/)) {
     const hexValues = generateHexFromText(line, 3);
-    return `${lineNumPrefix}<span style="color: ${themeConfig.textColor};">  [</span><span style="color: ${themeConfig.secondaryColor};">${hexValues.join(', ')}</span><span style="color: ${themeConfig.textColor};">],</span>`;
+    return `${lineNumPrefix}${indentSpan}<span style="color: ${themeConfig.textColor};">[</span><span style="color: ${themeConfig.secondaryColor};">${hexValues.join(', ')}</span><span style="color: ${themeConfig.textColor};">],</span>`;
   }
 
   // Regular text - transform into various obfuscated code patterns
@@ -62,38 +66,38 @@ function transformLineToCode(line: string, _theme: TransmuteTheme, themeConfig: 
       const varName = makeVarName(line).substring(0, 8);
       const hex1 = randomHex();
       const hex2 = randomHex();
-      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">const</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${hex1} ^ ${hex2}</span><span style="color: ${themeConfig.textColor};">;</span>`;
+      return `${indentSpan}<span style="color: ${themeConfig.accentColor}; font-weight: 600;">const</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${hex1} ^ ${hex2}</span><span style="color: ${themeConfig.textColor};">;</span>`;
     },
     // Function with hex return
     () => {
       const funcName = makeVarName(line).substring(0, 8);
       const hexArray = generateHexFromText(line, 4);
-      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">function</span> <span style="color: ${themeConfig.accentColor};">${funcName}</span><span style="color: ${themeConfig.textColor};">()</span> <span style="color: ${themeConfig.textColor};">{ return [</span><span style="color: ${themeConfig.secondaryColor};">${hexArray.join(', ')}</span><span style="color: ${themeConfig.textColor};">]; }</span>`;
+      return `${indentSpan}<span style="color: ${themeConfig.accentColor}; font-weight: 600;">function</span> <span style="color: ${themeConfig.accentColor};">${funcName}</span><span style="color: ${themeConfig.textColor};">()</span> <span style="color: ${themeConfig.textColor};">{ return [</span><span style="color: ${themeConfig.secondaryColor};">${hexArray.join(', ')}</span><span style="color: ${themeConfig.textColor};">]; }</span>`;
     },
     // Variable with encoded value
     () => {
       const varName = '_' + randomHex().substring(2);
       const encodedValue = randomHex();
-      return `<span style="color: ${themeConfig.accentColor}; font-weight: 600;">var</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${encodedValue}</span><span style="color: ${themeConfig.textColor};">;</span>`;
+      return `${indentSpan}<span style="color: ${themeConfig.accentColor}; font-weight: 600;">var</span> <span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${encodedValue}</span><span style="color: ${themeConfig.textColor};">;</span>`;
     },
     // Array with multiple hex values
     () => {
       const hexArray = generateHexFromText(line, 5);
-      return `<span style="color: ${themeConfig.textColor};">const _data = [</span><span style="color: ${themeConfig.secondaryColor};">${hexArray.join(', ')}</span><span style="color: ${themeConfig.textColor};">];</span>`;
+      return `${indentSpan}<span style="color: ${themeConfig.textColor};">const _data = [</span><span style="color: ${themeConfig.secondaryColor};">${hexArray.join(', ')}</span><span style="color: ${themeConfig.textColor};">];</span>`;
     },
     // Bitwise operation
     () => {
       const varName = makeVarName(line).substring(0, 6);
       const num1 = Math.floor(Math.random() * 255);
       const num2 = Math.floor(Math.random() * 255);
-      return `<span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${num1} << ${num2 % 8}</span><span style="color: ${themeConfig.textColor};">;</span>`;
+      return `${indentSpan}<span style="color: ${themeConfig.textColor};">${varName}</span> <span style="color: ${themeConfig.accentColor};">=</span> <span style="color: ${themeConfig.secondaryColor};">${num1} << ${num2 % 8}</span><span style="color: ${themeConfig.textColor};">;</span>`;
     },
   ];
 
   // Use line number to deterministically pick a pattern
   const patternIndex = lineNumber % patterns.length;
   const selectedPattern = patterns[patternIndex];
-  const codeLine = selectedPattern ? selectedPattern() : line;
+  const codeLine = selectedPattern ? selectedPattern() : indentSpan + line;
 
   return lineNumPrefix + codeLine;
 }

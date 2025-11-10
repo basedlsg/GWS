@@ -43,21 +43,34 @@ export function DistillationPage() {
   // Handle generating tasks from a goal
   const handleGenerateTasks = async (goal: string, persona: Persona) => {
     try {
-      const prompt = `You are a ${persona} productivity coach. Break down this goal into 6-8 specific, actionable tasks with detailed sub-steps. Each task should be concrete and measurable.
+      const prompt = `You are a ${persona} productivity coach helping someone achieve this SPECIFIC goal: "${goal}"
 
-Goal: ${goal}
+CRITICAL: Generate tasks that are 100% relevant to "${goal}". Do NOT include generic academic research tasks like "search Google Scholar" unless the goal is explicitly academic. Focus on PRACTICAL, ACTIONABLE steps specific to this exact goal.
 
-For each task, provide:
-1. The main action (what needs to be done)
-2. 2-3 specific sub-steps
-3. Time estimate
-4. Priority level (high/medium/low)
+Break down "${goal}" into 6-8 specific, actionable tasks with detailed sub-steps. Each task must:
+- Be directly related to "${goal}" (not generic advice)
+- Include 2-3 concrete sub-steps with specific details
+- Have realistic time estimates
+- Be prioritized as HIGH, MEDIUM, or LOW
 
-Format as a numbered list. Be specific about resources, tools, and concrete actions. Example:
-1. [HIGH PRIORITY] Research and evaluate project management tools (2 hours)
-   - Visit asana.com, monday.com, and trello.com
-   - Compare features and pricing for teams of 5-10
-   - Read reviews on g2.com and capterra.com`;
+Format each task as:
+1. [PRIORITY] Main task description (time estimate)
+   - Specific sub-step 1 with concrete details
+   - Specific sub-step 2 with concrete details
+   - Specific sub-step 3 with concrete details
+
+EXAMPLE for goal "buying a car":
+1. [HIGH] Determine your budget and financing options (3 hours)
+   - Calculate maximum monthly payment based on current income
+   - Check credit score at annualcreditreport.com
+   - Get pre-approval quotes from bank, credit union, and dealer financing
+
+2. [HIGH] Research car models that fit your needs and budget (4 hours)
+   - List must-have features (seats, cargo space, fuel economy, safety ratings)
+   - Compare 3-5 models on edmunds.com and kbb.com
+   - Read owner reviews on cars.com focusing on reliability
+
+Now generate tasks for: "${goal}"`;
 
       const response = await generateCompletion(prompt, {
         temperature: 0.7,

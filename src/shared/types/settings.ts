@@ -71,11 +71,12 @@ export interface Settings {
 
 /**
  * Default settings values
+ * Loads Groq API key from environment variable if available
  */
 export const DEFAULT_SETTINGS: Settings = {
   geminiApiKey: undefined,
-  groqApiKey: undefined,
-  preferredAIProvider: 'template', // Default to template mode
+  groqApiKey: import.meta.env.VITE_GROQ_API_KEY || undefined,
+  preferredAIProvider: import.meta.env.VITE_GROQ_API_KEY ? 'groq' : 'template',
   theme: 'dark',
   transmute: {
     defaultTheme: 'cyberpunk',

@@ -138,11 +138,9 @@ export function CulminationPage() {
       console.log('🎯 newAchievement returned:', newAchievement);
 
       if (newAchievement) {
-        // Reload all portfolios from localStorage
+        // Reload all portfolios from localStorage - CRITICAL: Force fresh load
         const freshPortfolios = loadPortfolios();
         console.log('🎯 freshPortfolios loaded:', freshPortfolios.length, 'portfolios');
-
-        setPortfolios(freshPortfolios);
 
         // Find the updated active portfolio
         const updated = freshPortfolios.find((p) => p.id === activePortfolio.id);
@@ -151,8 +149,15 @@ export function CulminationPage() {
         console.log('🎯 updated achievements:', updated?.achievements);
 
         if (updated) {
-          setActivePortfolio(updated);
-          console.log('🎯 activePortfolio state updated');
+          // CRITICAL: Update both states to force re-render
+          setPortfolios(freshPortfolios);
+
+          // Force create new reference by spreading the object
+          setActivePortfolio({
+            ...updated,
+            achievements: [...updated.achievements], // Force new array reference
+          });
+          console.log('🎯 activePortfolio state updated with new reference');
         } else {
           console.error('❌ Could not find updated portfolio!');
         }
@@ -195,9 +200,16 @@ export function CulminationPage() {
     const success = updateAchievementInPortfolio(activePortfolio.id, editingAchievement.id, achievementData);
 
     if (success) {
-      setPortfolios(loadPortfolios());
-      const updated = loadPortfolios().find((p) => p.id === activePortfolio.id);
-      if (updated) setActivePortfolio(updated);
+      const freshPortfolios = loadPortfolios();
+      setPortfolios(freshPortfolios);
+
+      const updated = freshPortfolios.find((p) => p.id === activePortfolio.id);
+      if (updated) {
+        setActivePortfolio({
+          ...updated,
+          achievements: [...updated.achievements], // Force new reference
+        });
+      }
 
       setShowAchievementForm(false);
       setEditingAchievement(null);
@@ -216,9 +228,16 @@ export function CulminationPage() {
     const success = deleteAchievementFromPortfolio(activePortfolio.id, achievementId);
 
     if (success) {
-      setPortfolios(loadPortfolios());
-      const updated = loadPortfolios().find((p) => p.id === activePortfolio.id);
-      if (updated) setActivePortfolio(updated);
+      const freshPortfolios = loadPortfolios();
+      setPortfolios(freshPortfolios);
+
+      const updated = freshPortfolios.find((p) => p.id === activePortfolio.id);
+      if (updated) {
+        setActivePortfolio({
+          ...updated,
+          achievements: [...updated.achievements], // Force new reference
+        });
+      }
 
       toast({
         title: 'Achievement Deleted',

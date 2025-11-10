@@ -138,17 +138,28 @@ export function ProjectionPage() {
         .map(msg => `${msg.role === 'user' ? 'You' : 'Participant'}: ${msg.content}`)
         .join('\n');
 
-      const prompt = `You are simulating a ${activeSession.scenario.type} scenario. You are playing the role of a ${activeSession.scenario.participantRole}.
+      const prompt = `You are simulating a realistic ${activeSession.scenario.type} scenario. You are playing the role of a ${activeSession.scenario.participantRole}.
 
-${activeSession.scenario.context ? `Scenario context: ${activeSession.scenario.context}` : ''}
+${activeSession.scenario.context ? `SCENARIO CONTEXT: ${activeSession.scenario.context}` : ''}
 
-${historyText ? `Conversation so far:\n${historyText}\n` : ''}
+${historyText ? `CONVERSATION HISTORY (this is critical context):\n${historyText}\n` : ''}
 
-Respond to the following message in character. Be realistic, professional, and challenging but fair. Reference specific details from the conversation. Ask follow-up questions to simulate a real ${activeSession.scenario.type}.
+CURRENT USER MESSAGE: "${content}"
 
-User: ${content}
+CRITICAL INSTRUCTIONS:
+1. Stay in character as the ${activeSession.scenario.participantRole}
+2. Respond DIRECTLY to what the user just said ("${content}")
+3. Reference SPECIFIC details from their message - quote their exact words when relevant
+4. Build on previous conversation - mention things discussed earlier
+5. Ask relevant follow-up questions based on what they said
+6. Be realistic and challenging but fair
+7. Do NOT give generic responses - make every response specific to this exact conversation
 
-Participant response:`;
+Example of GOOD response: "You mentioned you have 5 years of experience in ${content.split(' ').slice(0, 3).join(' ')}. Can you tell me about a specific challenge you faced?"
+
+Example of BAD response: "That's interesting. Tell me about yourself." (too generic, doesn't reference their actual message)
+
+Your response as ${activeSession.scenario.participantRole}:`;
 
       const response = await generateCompletion(prompt, {
         temperature: 0.8,

@@ -12,21 +12,39 @@ function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-/**
- * Extract keywords from goal text
- */
-function extractKeywords(text: string): string[] {
-  const commonWords = new Set([
-    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-    'of', 'with', 'by', 'from', 'up', 'about', 'into', 'through', 'during',
-    'i', 'want', 'need', 'would', 'like', 'should', 'could', 'will', 'my'
-  ]);
 
-  return text
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(word => word.length > 3 && !commonWords.has(word))
-    .slice(0, 3);
+/**
+ * Detect goal category for better task generation
+ */
+function categorizeGoal(goal: string): string {
+  const goalLower = goal.toLowerCase();
+
+  // Financial goals
+  if (goalLower.match(/buy|purchase|save.*money|invest|afford|finance|budget|car|house|home/)) {
+    return 'financial';
+  }
+  // Career goals
+  if (goalLower.match(/job|career|promotion|raise|interview|hire|work|business|startup|company/)) {
+    return 'career';
+  }
+  // Health goals
+  if (goalLower.match(/health|fitness|weight|exercise|diet|workout|run|gym|muscle|lose.*pound/)) {
+    return 'health';
+  }
+  // Learning goals
+  if (goalLower.match(/learn|study|course|education|skill|master|practice|language|programming|code/)) {
+    return 'learning';
+  }
+  // Relationship goals
+  if (goalLower.match(/relationship|dating|marriage|friend|social|network|connect/)) {
+    return 'relationship';
+  }
+  // Creative goals
+  if (goalLower.match(/create|build|write|book|art|music|design|project|app|website/)) {
+    return 'creative';
+  }
+
+  return 'general';
 }
 
 /**
@@ -35,46 +53,73 @@ function extractKeywords(text: string): string[] {
  * @param persona - Coaching persona to use
  * @returns Array of generated tasks
  */
-export function generateTasksFallback(goal: string, persona: Persona = 'strategic'): Task[] {
-  const keywords = extractKeywords(goal);
-  const mainKeyword = keywords[0] || 'goal';
+export function generateTasksFallback(goal: string, _persona: Persona = 'strategic'): Task[] {
+  const category = categorizeGoal(goal);
 
-  const personaTemplates = {
-    strategic: [
-      { text: `[HIGH] Define clear success metrics for ${mainKeyword} (1-2 hours)\n   - Write down 3-5 specific, measurable outcomes\n   - Set target numbers or milestones for each metric\n   - Document baseline/starting point`, priority: 'high' as TaskPriority },
-      { text: `[HIGH] Research best practices for ${goal} (2-3 hours)\n   - Search Google Scholar and industry publications\n   - Find 5-10 case studies of similar goals\n   - Bookmark resources at reddit.com/r/productivity`, priority: 'high' as TaskPriority },
-      { text: `[HIGH] Create roadmap with weekly milestones (1-2 hours)\n   - Break goal into 4-6 major phases\n   - Assign 1-3 week timeframes to each phase\n   - Use Notion, Trello, or Asana to visualize`, priority: 'high' as TaskPriority },
-      { text: `[MEDIUM] Identify risks and mitigation strategies (1 hour)\n   - List 3-5 potential obstacles\n   - Write backup plan for each obstacle\n   - Schedule weekly risk assessment check-ins`, priority: 'medium' as TaskPriority },
-      { text: `[MEDIUM] Establish KPIs and tracking system (1 hour)\n   - Choose 3-5 key performance indicators\n   - Set up spreadsheet or app for tracking\n   - Schedule daily/weekly measurement times`, priority: 'medium' as TaskPriority },
-      { text: `[LOW] Schedule progress review calendar (30 min)\n   - Block weekly 15-min review sessions\n   - Set monthly deep-dive analysis time\n   - Create review template/questions`, priority: 'low' as TaskPriority },
+  // Generate category-specific task templates
+  const categoryTasks: Record<string, Array<{ text: string; priority: TaskPriority }>> = {
+    financial: [
+      { text: `[HIGH] Calculate total budget and financial requirements for "${goal}" (1-2 hours)\n   - List all upfront costs and ongoing expenses\n   - Review current income, savings, and debt\n   - Determine realistic monthly payment amount`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Research financing and payment options (2-3 hours)\n   - Compare loan rates from bank, credit union, online lenders\n   - Check eligibility requirements and credit score impact\n   - Calculate total cost with interest for each option`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Identify specific products/services to evaluate (2 hours)\n   - Make list of top 5-10 options that fit budget\n   - Read consumer reviews and ratings on trusted sites\n   - Note pros/cons and key differences for each option`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Create comparison spreadsheet (1 hour)\n   - List all options with price, features, terms\n   - Add columns for total cost, monthly payment, ratings\n   - Highlight top 3 choices based on needs`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Plan timeline and action steps (1 hour)\n   - Set target date for achieving "${goal}"\n   - List what needs to happen each week\n   - Identify any deadlines or time-sensitive steps`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Set up savings/payment tracking (30 min)\n   - Create dedicated spreadsheet or use budgeting app\n   - Set weekly savings target if applicable\n   - Schedule reminders to track progress`, priority: 'low' as TaskPriority },
     ],
-    tactical: [
-      { text: `[HIGH] Break ${goal} into this week's actions (1 hour)\n   - List 5-10 specific actions for next 7 days\n   - Assign each action to a specific day\n   - Estimate time needed for each action`, priority: 'high' as TaskPriority },
-      { text: `[HIGH] Set up daily tracking system (30 min)\n   - Download habit tracker app (Habitica, Streaks, Way of Life)\n   - Create daily checklist in phone or notebook\n   - Set phone reminders for key tasks`, priority: 'high' as TaskPriority },
-      { text: `[HIGH] Block calendar time for ${mainKeyword} work (30 min)\n   - Find 2-3 consistent time slots per week\n   - Block time in Google Calendar or phone\n   - Set recurring calendar alerts`, priority: 'high' as TaskPriority },
-      { text: `[MEDIUM] Create immediate action checklist (45 min)\n   - List all tasks needed to start today\n   - Order by what must happen first\n   - Identify the single most important next step`, priority: 'medium' as TaskPriority },
-      { text: `[MEDIUM] List required tools and resources (30 min)\n   - Write down apps, books, courses needed\n   - Research free vs paid options\n   - Purchase or download top 2-3 essentials`, priority: 'medium' as TaskPriority },
-      { text: `[LOW] Find accountability partner or system (1 hour)\n   - Post in relevant Reddit community or Facebook group\n   - Ask friend or colleague to check in weekly\n   - Join online accountability group (Focusmate, coach.me)`, priority: 'low' as TaskPriority },
+    career: [
+      { text: `[HIGH] Research target companies/roles for "${goal}" (2-3 hours)\n   - List 10-15 companies hiring for this role\n   - Review job descriptions and requirements\n   - Save positions on LinkedIn, Indeed, Glassdoor`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Update resume and LinkedIn profile (3-4 hours)\n   - Tailor resume to highlight relevant experience\n   - Update LinkedIn with recent accomplishments\n   - Get 2-3 people to review and give feedback`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Prepare for interviews or meetings (2 hours)\n   - Research common interview questions for this field\n   - Prepare STAR method examples of your achievements\n   - Practice answers out loud or with friend`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Expand professional network (ongoing)\n   - Connect with 5-10 people in target industry on LinkedIn\n   - Join relevant professional groups or communities\n   - Attend 1-2 networking events or webinars`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Identify skill gaps and learning needs (1-2 hours)\n   - Compare your skills to job requirements\n   - Find free courses on Coursera, Udemy, YouTube\n   - Schedule 30-60 min daily for skill development`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Set up application tracking system (30 min)\n   - Create spreadsheet with company, role, date applied\n   - Add columns for status, contacts, next steps\n   - Schedule weekly review of all applications`, priority: 'low' as TaskPriority },
+    ],
+    health: [
+      { text: `[HIGH] Define specific, measurable targets for "${goal}" (1 hour)\n   - Set exact target (weight, distance, reps, etc.)\n   - Choose realistic timeline based on safe progress\n   - Break into monthly and weekly mini-goals`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Create detailed weekly plan (2 hours)\n   - Schedule specific workout days/times\n   - Plan meals or track calories using MyFitnessPal\n   - Prepare grocery list with healthy options`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Set up tracking and accountability (1 hour)\n   - Download fitness app (Strava, Fitbit, Apple Health)\n   - Take before photos and measurements\n   - Tell friend/family for accountability`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Research and learn best practices (2 hours)\n   - Watch YouTube videos from certified trainers\n   - Read articles on proper form and technique\n   - Join Reddit community for tips and motivation`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Prepare environment for success (1 hour)\n   - Remove junk food or buy healthy snacks\n   - Set out workout clothes night before\n   - Find workout buddy or online community`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Plan for obstacles and setbacks (30 min)\n   - Identify top 3 barriers (time, energy, motivation)\n   - Write backup plan for each scenario\n   - Schedule rest days to prevent burnout`, priority: 'low' as TaskPriority },
+    ],
+    learning: [
+      { text: `[HIGH] Find best learning resources for "${goal}" (2-3 hours)\n   - Compare top courses on Udemy, Coursera, YouTube\n   - Read reviews and check instructor credentials\n   - Choose 1-2 primary resources to start with`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Create structured learning schedule (1 hour)\n   - Block 30-60 min daily for practice\n   - Set weekly learning goals (chapters, videos, exercises)\n   - Add study sessions to calendar with alerts`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Set up practice/project environment (1-2 hours)\n   - Install necessary software or tools\n   - Create dedicated workspace or folder\n   - Gather materials (books, notebooks, accounts)`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Build small projects to apply knowledge (ongoing)\n   - Start beginner project in week 1\n   - Increase complexity each week\n   - Share work for feedback from others`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Join community for support and questions (1 hour)\n   - Find relevant Reddit, Discord, or Facebook group\n   - Introduce yourself and learning goals\n   - Ask questions and help others when you can`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Track progress and celebrate wins (ongoing)\n   - Keep journal of what you learned each session\n   - Test yourself weekly on key concepts\n   - Reward yourself at milestones`, priority: 'low' as TaskPriority },
+    ],
+    relationship: [
+      { text: `[HIGH] Clarify what you want in "${goal}" (1-2 hours)\n   - Write specific qualities you're looking for\n   - Identify your own values and dealbreakers\n   - Reflect on past experiences and lessons learned`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Put yourself in situations to meet people (ongoing)\n   - Join 2-3 groups/clubs related to your interests\n   - Attend social events or activities weekly\n   - Try apps or platforms relevant to your goal`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Work on personal growth and confidence (ongoing)\n   - Practice conversation skills with strangers\n   - Work on appearance, posture, communication\n   - Address insecurities through therapy or self-help`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Expand social circle and network (ongoing)\n   - Reconnect with old friends or acquaintances\n   - Say yes to invitations and introduce yourself\n   - Host small gatherings or invite people out`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Learn from others' experiences (1-2 hours)\n   - Read books or articles on healthy relationships\n   - Listen to podcasts or watch videos\n   - Ask trusted friends for advice`, priority: 'low' as TaskPriority },
+      { text: `[LOW] Stay patient and positive (ongoing)\n   - Remember quality over quantity\n   - Don't take rejection personally\n   - Celebrate small wins and connections`, priority: 'low' as TaskPriority },
     ],
     creative: [
-      { text: `[HIGH] Brainstorm 20+ approaches to ${mainKeyword} (1 hour)\n   - Set 20-minute timer for rapid ideation\n   - Use mind mapping (Miro, Coggle, or paper)\n   - Don't filter - capture all ideas`, priority: 'high' as TaskPriority },
-      { text: `[HIGH] Research unconventional methods (2 hours)\n   - Search "[your goal] unconventional methods"\n   - Watch 3-5 TED talks or YouTube videos\n   - Browse r/UnconventionalLifeProTips`, priority: 'high' as TaskPriority },
-      { text: `[MEDIUM] Create vision board for ${goal} (1-2 hours)\n   - Collect 15-20 inspiring images\n   - Use Canva, Pinterest, or physical poster\n   - Place somewhere you'll see daily`, priority: 'medium' as TaskPriority },
-      { text: `[MEDIUM] Find 5-10 inspiring examples (1-2 hours)\n   - Search success stories on Medium or blogs\n   - Join relevant Facebook or LinkedIn groups\n   - Save case studies to Evernote or Notion`, priority: 'medium' as TaskPriority },
-      { text: `[MEDIUM] Run 3 small experiments this week (ongoing)\n   - Try different techniques for 2-3 days each\n   - Document what works and what doesn't\n   - Iterate based on results`, priority: 'medium' as TaskPriority },
-      { text: `[LOW] Start insights journal (15 min/day)\n   - Create document or notebook\n   - Write daily reflections and discoveries\n   - Review weekly for patterns`, priority: 'low' as TaskPriority },
+      { text: `[HIGH] Define scope and vision for "${goal}" (2 hours)\n   - Describe the finished product in detail\n   - Sketch mockups, outlines, or storyboards\n   - Identify similar works for inspiration`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Break project into manageable phases (1-2 hours)\n   - List all major components or chapters\n   - Estimate time needed for each part\n   - Create week-by-week production timeline`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Set up tools and workspace (1-2 hours)\n   - Install/purchase necessary software or materials\n   - Organize dedicated workspace\n   - Test equipment and learn basic functions`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Block regular creation time (ongoing)\n   - Schedule 1-3 hour blocks for deep work\n   - Protect this time from distractions\n   - Show up consistently even when unmotivated`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Study craft and learn techniques (2-3 hours/week)\n   - Watch tutorials or take course\n   - Study work of masters in your field\n   - Practice specific skills separately`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Share work and get feedback (ongoing)\n   - Post drafts to relevant communities\n   - Ask trusted friends for honest critique\n   - Iterate based on feedback received`, priority: 'low' as TaskPriority },
     ],
-    philosophical: [
-      { text: `[HIGH] Reflect deeply on why ${goal} matters (1 hour)\n   - Write 500 words on personal significance\n   - Ask "why" 5 times to find root motivation\n   - Identify connection to core values`, priority: 'high' as TaskPriority },
-      { text: `[HIGH] Identify values driving this goal (1 hour)\n   - List 5-10 personal values\n   - Rank which values this goal serves\n   - Write how goal expresses each value`, priority: 'high' as TaskPriority },
-      { text: `[MEDIUM] Examine alignment with life purpose (1-2 hours)\n   - Write personal mission statement\n   - Map how ${mainKeyword} fits larger vision\n   - Identify any misalignments to address`, priority: 'medium' as TaskPriority },
-      { text: `[MEDIUM] Analyze obstacles from multiple perspectives (1 hour)\n   - Write obstacles from 3 viewpoints\n   - Consider worst/best/most likely scenarios\n   - Find lessons in each potential challenge`, priority: 'medium' as TaskPriority },
-      { text: `[LOW] Create decision-making framework (1 hour)\n   - Define 3-5 guiding principles\n   - Write criteria for tough choices\n   - Test framework on a sample decision`, priority: 'low' as TaskPriority },
-      { text: `[LOW] Begin meaning journal (15 min/day)\n   - Write about journey significance\n   - Record insights and growth\n   - Review monthly for deeper patterns`, priority: 'low' as TaskPriority },
+    general: [
+      { text: `[HIGH] Define clear success criteria for "${goal}" (1-2 hours)\n   - Write down what success looks like specifically\n   - Set measurable milestones\n   - Determine realistic timeline`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Research how others achieved similar goals (2-3 hours)\n   - Search online for success stories and case studies\n   - Learn common strategies and approaches\n   - Note what worked and what didn't`, priority: 'high' as TaskPriority },
+      { text: `[HIGH] Create action plan with specific steps (1-2 hours)\n   - List all tasks needed to achieve goal\n   - Order tasks by priority and dependencies\n   - Assign deadlines to each task`, priority: 'high' as TaskPriority },
+      { text: `[MEDIUM] Gather necessary resources and tools (1-2 hours)\n   - List what you need (info, tools, help)\n   - Acquire or purchase top priorities\n   - Set up systems for tracking progress`, priority: 'medium' as TaskPriority },
+      { text: `[MEDIUM] Build support system and accountability (1 hour)\n   - Tell friends/family about your goal\n   - Find accountability partner or group\n   - Schedule regular check-ins on progress`, priority: 'medium' as TaskPriority },
+      { text: `[LOW] Anticipate obstacles and plan solutions (1 hour)\n   - List potential challenges\n   - Create backup plans for each\n   - Schedule weekly reviews to adjust course`, priority: 'low' as TaskPriority },
     ],
   };
 
-  const templates = personaTemplates[persona];
+  const templates = categoryTasks[category] ?? categoryTasks.general;
+  if (!templates) {
+    return [];
+  }
 
   return templates.map((template) => ({
     id: generateId(),
