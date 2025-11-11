@@ -5,20 +5,25 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { createEditor, Descendant } from 'slate';
-import { Slate, Editable, withReact } from 'slate-react';
+import { Slate, Editable, withReact, RenderElementProps, RenderLeafProps } from 'slate-react';
 import { withHistory } from 'slate-history';
 import Split from 'react-split';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { DEFAULT_DOCUMENT_CONTENT, CODE_THEMES } from './constants';
+import { DEFAULT_DOCUMENT_CONTENT, CODE_THEMES, DEFAULT_SETTINGS } from './constants';
 import { transformToCode, highlightCode } from './utils/textToCode';
-import type { CodeLanguage } from './types';
+import { toggleMark } from './utils/slateHelpers';
+import { Element, Leaf } from './components/SlateRenderers';
+import { EditorToolbar } from './components/EditorToolbar';
+import type { CodeLanguage, CustomEditor } from './types';
 import './transmute.css';
 
 export function TransmutePage() {
   const [value, setValue] = useState<Descendant[]>(DEFAULT_DOCUMENT_CONTENT);
   const [selectedLanguage, setSelectedLanguage] = useState<CodeLanguage>('javascript');
   const [selectedTheme, setSelectedTheme] = useState('matrix-green');
+  const [fontSize, setFontSize] = useState(DEFAULT_SETTINGS.fontSize);
+  const [fontFamily, setFontFamily] = useState(DEFAULT_SETTINGS.fontFamily);
 
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
 
@@ -38,6 +43,35 @@ export function TransmutePage() {
     return highlightCode(codeText, selectedLanguage, theme);
   }, [codeText, selectedLanguage, theme]);
 
+  // Render element
+  const renderElement = useCallback((props: RenderElementProps) => <Element {...props} />, []);
+
+  // Render leaf
+  const renderLeaf = useCallback((props: RenderLeafProps) => <Leaf {...props} />, []);
+
+  // Keyboard shortcuts
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+
+    switch (event.key) {
+      case 'b': {
+        event.preventDefault();
+        toggleMark(editor as CustomEditor, 'bold');
+        break;
+      }
+      case 'i': {
+        event.preventDefault();
+        toggleMark(editor as CustomEditor, 'italic');
+        break;
+      }
+      case 'u': {
+        event.preventDefault();
+        toggleMark(editor as CustomEditor, 'underline');
+        break;
+      }
+    }
+  }, [editor]);
+
   return (
     <div className="h-screen flex flex-col p-4">
       <div className="mb-4">
@@ -50,7 +84,7 @@ export function TransmutePage() {
         <select
           value={selectedLanguage}
           onChange={(e) => setSelectedLanguage(e.target.value as CodeLanguage)}
-          className="px-3 py-2 border rounded"
+          className="px-3 py-2 border rounded text-sm"
         >
           <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
@@ -64,7 +98,7 @@ export function TransmutePage() {
         <select
           value={selectedTheme}
           onChange={(e) => setSelectedTheme(e.target.value)}
-          className="px-3 py-2 border rounded"
+          className="px-3 py-2 border rounded text-sm"
         >
           <option value="matrix-green">Matrix Green</option>
           <option value="neon-purple">Neon Purple</option>
@@ -73,8 +107,10 @@ export function TransmutePage() {
           <option value="hacker-terminal">Hacker Terminal</option>
         </select>
 
-        <Button variant="outline">New Document</Button>
-        <Button variant="outline">Export</Button>
+        <div className="flex-1" />
+
+        <Button variant="outline" size="sm">New Document</Button>
+        <Button variant="outline" size="sm">Export</Button>
       </div>
 
       {/* Split View Editor */}
@@ -87,12 +123,23 @@ export function TransmutePage() {
           style={{ display: 'flex', height: '100%' }}
         >
           {/* Left: Rich Text Editor */}
-          <Card className="overflow-auto p-4">
+          <Card className="overflow-auto p-4 flex flex-col">
             <Slate editor={editor} initialValue={value} onValueChange={handleChange}>
+              <EditorToolbar
+                fontSize={fontSize}
+                fontFamily={fontFamily}
+                onFontSizeChange={setFontSize}
+                onFontFamilyChange={setFontFamily}
+              />
               <Editable
+                renderElement={renderElement}
+                renderLeaf={renderLeaf}
                 placeholder="Start writing..."
-                className="outline-none min-h-full"
-                style={{ fontSize: '16px', fontFamily: 'system-ui, sans-serif' }}
+                spellCheck
+                autoFocus
+                onKeyDown={handleKeyDown}
+                className="outline-none flex-1"
+                style={{ fontSize: `${fontSize}px`, fontFamily }}
               />
             </Slate>
           </Card>
@@ -103,7 +150,7 @@ export function TransmutePage() {
             style={{ backgroundColor: theme.background, color: theme.textColor }}
           >
             <pre
-              className="font-mono text-sm"
+              className="font-mono text-sm leading-relaxed"
               dangerouslySetInnerHTML={{ __html: highlightedCode }}
             />
           </Card>
