@@ -59,13 +59,18 @@ export function TransmutePage() {
   // Sync editor state with current document
   useEffect(() => {
     if (currentDocument) {
-      setValue(currentDocument.content);
+      // Update editor content by replacing all children
+      const newContent = currentDocument.content;
+      editor.children = newContent;
+      editor.onChange();
+
+      setValue(newContent);
       setSelectedLanguage(currentDocument.metadata.selectedLanguage);
       setSelectedTheme(currentDocument.metadata.selectedTheme);
       setFontSize(currentDocument.metadata.fontSize);
       setFontFamily(currentDocument.metadata.fontFamily);
     }
-  }, [currentDocument?.id]); // Only update when document ID changes
+  }, [currentDocument?.id, editor]); // Only update when document ID changes
 
   // Color animation
   const { getColorForCharIndex } = useColorAnimation(
@@ -242,7 +247,6 @@ export function TransmutePage() {
             {/* Left: Rich Text Editor */}
             <Card className="overflow-auto p-4 flex flex-col">
               <Slate
-                key={currentDocument?.id || 'default'}
                 editor={editor}
                 initialValue={value}
                 onValueChange={handleChange}
