@@ -45,3 +45,4 @@ coverage
 .parcel-cache
 .temp
 .tmp
+.vercel
