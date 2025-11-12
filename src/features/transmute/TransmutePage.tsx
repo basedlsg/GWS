@@ -8,13 +8,15 @@ import { createEditor, Descendant } from 'slate';
 import { Slate, Editable, withReact, RenderElementProps, RenderLeafProps } from 'slate-react';
 import { withHistory } from 'slate-history';
 import Split from 'react-split';
+import { Sparkles } from 'lucide-react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
 import { DEFAULT_DOCUMENT_CONTENT, CODE_THEMES, DEFAULT_SETTINGS } from './constants';
 import { transformToCode, highlightCode } from './utils/textToCode';
 import { toggleMark } from './utils/slateHelpers';
-import { Element, Leaf } from './components/SlateRenderers';
+import { Element, createLeafRenderer } from './components/SlateRenderers';
 import { EditorToolbar } from './components/EditorToolbar';
+import { useColorAnimation } from './hooks/useColorAnimation';
 import type { CodeLanguage, CustomEditor } from './types';
 import './transmute.css';
 
@@ -24,8 +26,15 @@ export function TransmutePage() {
   const [selectedTheme, setSelectedTheme] = useState('matrix-green');
   const [fontSize, setFontSize] = useState(DEFAULT_SETTINGS.fontSize);
   const [fontFamily, setFontFamily] = useState(DEFAULT_SETTINGS.fontFamily);
+  const [colorAnimationEnabled, setColorAnimationEnabled] = useState(DEFAULT_SETTINGS.showRandomColors);
 
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
+
+  // Color animation
+  const { getColorForCharIndex } = useColorAnimation(
+    colorAnimationEnabled,
+    DEFAULT_SETTINGS.colorAnimationSpeed
+  );
 
   const handleChange = useCallback((newValue: Descendant[]) => {
     setValue(newValue);
@@ -46,8 +55,13 @@ export function TransmutePage() {
   // Render element
   const renderElement = useCallback((props: RenderElementProps) => <Element {...props} />, []);
 
-  // Render leaf
-  const renderLeaf = useCallback((props: RenderLeafProps) => <Leaf {...props} />, []);
+  // Render leaf with color animation
+  const renderLeaf = useCallback((props: RenderLeafProps) => {
+    const LeafRenderer = createLeafRenderer(
+      colorAnimationEnabled ? getColorForCharIndex : undefined
+    );
+    return <LeafRenderer {...props} />;
+  }, [colorAnimationEnabled, getColorForCharIndex]);
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
@@ -80,7 +94,7 @@ export function TransmutePage() {
       </div>
 
       {/* Controls */}
-      <div className="mb-4 flex gap-4">
+      <div className="mb-4 flex flex-wrap gap-4 items-center">
         <select
           value={selectedLanguage}
           onChange={(e) => setSelectedLanguage(e.target.value as CodeLanguage)}
@@ -106,6 +120,18 @@ export function TransmutePage() {
           <option value="synthwave">Synthwave</option>
           <option value="hacker-terminal">Hacker Terminal</option>
         </select>
+
+        {/* Color Animation Toggle */}
+        <label className="flex items-center space-x-2 border px-3 py-2 rounded cursor-pointer hover:bg-accent">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <span className="text-sm font-normal">Animated Colors</span>
+          <input
+            type="checkbox"
+            checked={colorAnimationEnabled}
+            onChange={(e) => setColorAnimationEnabled(e.target.checked)}
+            className="ml-2 h-4 w-4"
+          />
+        </label>
 
         <div className="flex-1" />
 

@@ -68,29 +68,54 @@ export const Element = ({ attributes, children, element }: RenderElementProps) =
   }
 };
 
-// Render custom text formatting (bold, italic, underline, color)
-export const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
-  let styledChildren = children;
+// Create a Leaf component factory that accepts color function
+export const createLeafRenderer = (getColorForChar?: (index: number) => string | undefined) => {
+  return ({ attributes, children, leaf }: RenderLeafProps) => {
+    // Extract text content for character-level coloring
+    const textContent = leaf.text;
 
-  if (leaf.bold) {
-    styledChildren = <strong>{styledChildren}</strong>;
-  }
+    let styledChildren: React.ReactNode = children;
 
-  if (leaf.italic) {
-    styledChildren = <em>{styledChildren}</em>;
-  }
+    // Apply character-level random colors if enabled
+    if (getColorForChar && textContent) {
+      const coloredChars = textContent.split('').map((char, index) => {
+        const color = getColorForChar(index);
+        if (color) {
+          return (
+            <span
+              key={index}
+              style={{
+                color,
+                transition: 'color 2s ease-in-out',
+                textShadow: `0 0 8px ${color}40`, // Subtle glow effect
+              }}
+            >
+              {char}
+            </span>
+          );
+        }
+        return char;
+      });
 
-  if (leaf.underline) {
-    styledChildren = <u>{styledChildren}</u>;
-  }
+      styledChildren = <>{coloredChars}</>;
+    }
 
-  if (leaf.color) {
-    styledChildren = (
-      <span style={{ color: leaf.color, transition: 'color 2s ease-in-out' }}>
-        {styledChildren}
-      </span>
-    );
-  }
+    // Apply text formatting
+    if (leaf.bold) {
+      styledChildren = <strong>{styledChildren}</strong>;
+    }
 
-  return <span {...attributes}>{styledChildren}</span>;
+    if (leaf.italic) {
+      styledChildren = <em>{styledChildren}</em>;
+    }
+
+    if (leaf.underline) {
+      styledChildren = <u>{styledChildren}</u>;
+    }
+
+    return <span {...attributes}>{styledChildren}</span>;
+  };
 };
+
+// Default Leaf renderer without color animation
+export const Leaf = createLeafRenderer();
