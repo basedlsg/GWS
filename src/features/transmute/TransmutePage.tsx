@@ -3,32 +3,69 @@
  * Split-view editor where text appears as code on the right
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { createEditor, Descendant } from 'slate';
 import { Slate, Editable, withReact, RenderElementProps, RenderLeafProps } from 'slate-react';
 import { withHistory } from 'slate-history';
 import Split from 'react-split';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, FolderOpen } from 'lucide-react';
 import { Card } from '@/shared/components/ui/card';
 import { Button } from '@/shared/components/ui/button';
-import { DEFAULT_DOCUMENT_CONTENT, CODE_THEMES, DEFAULT_SETTINGS } from './constants';
+import { CODE_THEMES, DEFAULT_SETTINGS } from './constants';
 import { transformToCode, highlightCode } from './utils/textToCode';
 import { toggleMark } from './utils/slateHelpers';
 import { Element, createLeafRenderer } from './components/SlateRenderers';
 import { EditorToolbar } from './components/EditorToolbar';
+import { DocumentSidebar } from './components/DocumentSidebar';
+import { ExportMenu } from './components/ExportMenu';
 import { useColorAnimation } from './hooks/useColorAnimation';
+import { useDocumentManager } from './hooks/useDocumentManager';
 import type { CodeLanguage, CustomEditor } from './types';
 import './transmute.css';
 
 export function TransmutePage() {
-  const [value, setValue] = useState<Descendant[]>(DEFAULT_DOCUMENT_CONTENT);
-  const [selectedLanguage, setSelectedLanguage] = useState<CodeLanguage>('javascript');
-  const [selectedTheme, setSelectedTheme] = useState('matrix-green');
   const [fontSize, setFontSize] = useState(DEFAULT_SETTINGS.fontSize);
   const [fontFamily, setFontFamily] = useState(DEFAULT_SETTINGS.fontFamily);
   const [colorAnimationEnabled, setColorAnimationEnabled] = useState(DEFAULT_SETTINGS.showRandomColors);
+  const [showSidebar, setShowSidebar] = useState(false);
+
+  // Document management
+  const {
+    documents,
+    currentDocument,
+    isLoading,
+    searchQuery,
+    currentPage,
+    setCurrentPage,
+    createDocument,
+    switchDocument,
+    updateContent,
+    updateMetadata,
+    deleteDocument,
+    search,
+  } = useDocumentManager();
+
+  // Editor state from current document
+  const [value, setValue] = useState<Descendant[]>(currentDocument?.content || []);
+  const [selectedLanguage, setSelectedLanguage] = useState<CodeLanguage>(
+    currentDocument?.metadata.selectedLanguage || 'javascript'
+  );
+  const [selectedTheme, setSelectedTheme] = useState(
+    currentDocument?.metadata.selectedTheme || 'matrix-green'
+  );
 
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
+
+  // Sync editor state with current document
+  useEffect(() => {
+    if (currentDocument) {
+      setValue(currentDocument.content);
+      setSelectedLanguage(currentDocument.metadata.selectedLanguage);
+      setSelectedTheme(currentDocument.metadata.selectedTheme);
+      setFontSize(currentDocument.metadata.fontSize);
+      setFontFamily(currentDocument.metadata.fontFamily);
+    }
+  }, [currentDocument?.id]); // Only update when document ID changes
 
   // Color animation
   const { getColorForCharIndex } = useColorAnimation(
@@ -38,7 +75,20 @@ export function TransmutePage() {
 
   const handleChange = useCallback((newValue: Descendant[]) => {
     setValue(newValue);
-  }, []);
+    updateContent(newValue);
+  }, [updateContent]);
+
+  // Update metadata when settings change
+  useEffect(() => {
+    if (currentDocument) {
+      updateMetadata({
+        selectedLanguage,
+        selectedTheme,
+        fontSize,
+        fontFamily,
+      });
+    }
+  }, [selectedLanguage, selectedTheme, fontSize, fontFamily, currentDocument?.id, updateMetadata]);
 
   // Generate code preview
   const codeText = useMemo(() => {
@@ -85,6 +135,16 @@ export function TransmutePage() {
       }
     }
   }, [editor]);
+
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg font-medium">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col p-4">
@@ -135,52 +195,84 @@ export function TransmutePage() {
 
         <div className="flex-1" />
 
-        <Button variant="outline" size="sm">New Document</Button>
-        <Button variant="outline" size="sm">Export</Button>
+        <Button variant="outline" size="sm" onClick={() => setShowSidebar(!showSidebar)}>
+          <FolderOpen className="h-4 w-4 mr-2" />
+          Documents
+        </Button>
+
+        <ExportMenu document={currentDocument} codeText={codeText} />
       </div>
 
-      {/* Split View Editor */}
-      <div className="flex-1 overflow-hidden">
-        <Split
-          className="split-container"
-          sizes={[50, 50]}
-          minSize={300}
-          gutterSize={10}
-          style={{ display: 'flex', height: '100%' }}
-        >
-          {/* Left: Rich Text Editor */}
-          <Card className="overflow-auto p-4 flex flex-col">
-            <Slate editor={editor} initialValue={value} onValueChange={handleChange}>
-              <EditorToolbar
-                fontSize={fontSize}
-                fontFamily={fontFamily}
-                onFontSizeChange={setFontSize}
-                onFontFamilyChange={setFontFamily}
-              />
-              <Editable
-                renderElement={renderElement}
-                renderLeaf={renderLeaf}
-                placeholder="Start writing..."
-                spellCheck
-                autoFocus
-                onKeyDown={handleKeyDown}
-                className="outline-none flex-1"
-                style={{ fontSize: `${fontSize}px`, fontFamily }}
-              />
-            </Slate>
-          </Card>
-
-          {/* Right: Code Preview */}
-          <Card
-            className="overflow-auto p-4"
-            style={{ backgroundColor: theme.background, color: theme.textColor }}
-          >
-            <pre
-              className="font-mono text-sm leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: highlightedCode }}
+      {/* Main Content with Sidebar */}
+      <div className="flex-1 overflow-hidden flex gap-4">
+        {/* Document Sidebar */}
+        {showSidebar && (
+          <div className="w-80 flex-shrink-0">
+            <DocumentSidebar
+              documents={documents.documents}
+              currentDocumentId={currentDocument?.id || null}
+              currentPage={currentPage}
+              totalPages={documents.totalPages}
+              searchQuery={searchQuery}
+              onCreateDocument={() => {
+                createDocument();
+                setShowSidebar(false);
+              }}
+              onSwitchDocument={(id) => {
+                switchDocument(id);
+                setShowSidebar(false);
+              }}
+              onDeleteDocument={deleteDocument}
+              onSearch={search}
+              onPageChange={setCurrentPage}
+              onClose={() => setShowSidebar(false)}
             />
-          </Card>
-        </Split>
+          </div>
+        )}
+
+        {/* Editor */}
+        <div className="flex-1 overflow-hidden">
+          <Split
+            className="split-container"
+            sizes={[50, 50]}
+            minSize={300}
+            gutterSize={10}
+            style={{ display: 'flex', height: '100%' }}
+          >
+            {/* Left: Rich Text Editor */}
+            <Card className="overflow-auto p-4 flex flex-col">
+              <Slate editor={editor} initialValue={value} onValueChange={handleChange}>
+                <EditorToolbar
+                  fontSize={fontSize}
+                  fontFamily={fontFamily}
+                  onFontSizeChange={setFontSize}
+                  onFontFamilyChange={setFontFamily}
+                />
+                <Editable
+                  renderElement={renderElement}
+                  renderLeaf={renderLeaf}
+                  placeholder="Start writing..."
+                  spellCheck
+                  autoFocus
+                  onKeyDown={handleKeyDown}
+                  className="outline-none flex-1"
+                  style={{ fontSize: `${fontSize}px`, fontFamily }}
+                />
+              </Slate>
+            </Card>
+
+            {/* Right: Code Preview */}
+            <Card
+              className="overflow-auto p-4"
+              style={{ backgroundColor: theme.background, color: theme.textColor }}
+            >
+              <pre
+                className="font-mono text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: highlightedCode }}
+              />
+            </Card>
+          </Split>
+        </div>
       </div>
     </div>
   );
