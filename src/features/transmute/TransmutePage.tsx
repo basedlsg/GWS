@@ -241,7 +241,12 @@ export function TransmutePage() {
           >
             {/* Left: Rich Text Editor */}
             <Card className="overflow-auto p-4 flex flex-col">
-              <Slate editor={editor} initialValue={value} onValueChange={handleChange}>
+              <Slate
+                key={currentDocument?.id || 'default'}
+                editor={editor}
+                initialValue={value}
+                onValueChange={handleChange}
+              >
                 <EditorToolbar
                   fontSize={fontSize}
                   fontFamily={fontFamily}
