@@ -18,9 +18,9 @@ export interface Theme {
 export const MATRIX_THEME: Theme = {
   name: 'matrix-green',
   background: '#000000',
-  textColor: '#AAAAAA',      // Default text: light gray
+  textColor: '#00FFAA',       // Default text: cyan-green (vibrant fallback)
   keyword: '#00FF00',         // Keywords: bright green
-  string: '#00FFFF',          // Strings: cyan
+  string: '#FF00FF',          // Strings: magenta
   number: '#FFFF00',          // Numbers: yellow
   comment: '#666666',         // Comments: dark gray
 };
@@ -47,6 +47,7 @@ const KEYWORDS: Record<CodeLanguage, string[]> = {
 /**
  * Apply syntax highlighting to code text with varied colors
  * Uses placeholder technique to avoid regex conflicts
+ * Colors EVERYTHING - no grey text!
  */
 export function highlightCode(code: string, language: CodeLanguage, theme: Theme): string {
   let highlighted = code;
@@ -78,16 +79,19 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
   // Protect strings
   highlighted = highlighted.replace(/"([^"]*)"/g, (_match, content) => {
     const placeholder = `__STRING_${placeholderIndex}__`;
-    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">"${content}"</span>`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string}; font-weight: 500;">"${content}"</span>`;
     placeholderIndex++;
     return placeholder;
   });
   highlighted = highlighted.replace(/'([^']*)'/g, (_match, content) => {
     const placeholder = `__STRING_${placeholderIndex}__`;
-    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">'${content}'</span>`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string}; font-weight: 500;">'${content}'</span>`;
     placeholderIndex++;
     return placeholder;
   });
+
+  // Highlight numbers BEFORE keywords (so they don't get caught by word boundaries)
+  highlighted = highlighted.replace(/\b(\d+)\b/g, `<span style="color: ${theme.number}; font-weight: 600;">$1</span>`);
 
   // Highlight keywords
   const keywords = KEYWORDS[language] || [];
@@ -96,20 +100,38 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
     highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword}; font-weight: 700;">$1</span>`);
   });
 
-  // Highlight function names (before parentheses)
-  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(\()/g, `<span style="color: #FF00FF; font-weight: 600;">$1</span>$2`);
+  // Highlight function names (before parentheses) - CYAN
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(\()/g, `<span style="color: #00FFFF; font-weight: 600;">$1</span>$2`);
 
-  // Highlight variable names (before equals)
-  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(=)/g, `<span style="color: #00DDFF;">$1</span>$2`);
+  // Highlight variable names (before equals) - ORANGE
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(=)/g, `<span style="color: #FF8800; font-weight: 500;">$1</span>$2`);
 
-  // Highlight numbers
-  highlighted = highlighted.replace(/\b(\d+)\b/g, `<span style="color: ${theme.number};">$1</span>`);
+  // Highlight property access (after dot) - PINK
+  highlighted = highlighted.replace(/\.([a-zA-Z_][a-zA-Z0-9_]*)/g, `.<span style="color: #FF69B4; font-weight: 500;">$1</span>`);
 
-  // Highlight operators
-  highlighted = highlighted.replace(/([+\-*/%<>!&|]+)/g, `<span style="color: #FF8800;">$1</span>`);
+  // Highlight operators - RED/ORANGE
+  highlighted = highlighted.replace(/([+\-*/%<>!&|]+)/g, `<span style="color: #FF4444;">$1</span>`);
 
-  // Highlight punctuation
-  highlighted = highlighted.replace(/([{}[\]();,.])/g, `<span style="color: #999999;">$1</span>`);
+  // Highlight equals sign specifically - BRIGHT ORANGE
+  highlighted = highlighted.replace(/(=)/g, `<span style="color: #FF8800;">$1</span>`);
+
+  // Highlight punctuation - LIGHT PURPLE
+  highlighted = highlighted.replace(/([{}[\]();,.])/g, `<span style="color: #AA88FF;">$1</span>`);
+
+  // COLOR ALL REMAINING IDENTIFIERS that haven't been colored yet
+  // This ensures NO grey text remains
+  const colorPalette = ['#00FFAA', '#00DDFF', '#FFAA00', '#FF66FF', '#66FFFF', '#AAFF00'];
+  let colorIndex = 0;
+
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, (match) => {
+    // Skip if already wrapped in span
+    if (match.includes('span') || match.includes('style')) {
+      return match;
+    }
+    const color = colorPalette[colorIndex % colorPalette.length]!;
+    colorIndex++;
+    return `<span style="color: ${color};">${match}</span>`;
+  });
 
   // Restore protected regions
   protectedRegions.forEach((region, index) => {
