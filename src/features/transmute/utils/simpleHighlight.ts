@@ -46,6 +46,7 @@ const KEYWORDS: Record<CodeLanguage, string[]> = {
 
 /**
  * Apply syntax highlighting to code text with varied colors
+ * Uses placeholder technique to avoid regex conflicts
  */
 export function highlightCode(code: string, language: CodeLanguage, theme: Theme): string {
   let highlighted = code;
@@ -56,31 +57,67 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Apply comment highlighting FIRST (must be done before other replacements)
-  highlighted = highlighted.replace(/\/\/(.*?)$/gm, match => `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`);
-  highlighted = highlighted.replace(/#(.*?)$/gm, match => `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`);
+  // Store protected regions with placeholders
+  const protectedRegions: string[] = [];
+  let placeholderIndex = 0;
 
-  // Apply string highlighting (content in quotes)
-  highlighted = highlighted.replace(/"([^"]*)"/g, `<span style="color: ${theme.string};">"$1"</span>`);
-  highlighted = highlighted.replace(/'([^']*)'/g, `<span style="color: ${theme.string};">'$1'</span>`);
-
-  // Apply number highlighting
-  highlighted = highlighted.replace(/\b\d+\b/g, match => `<span style="color: ${theme.number};">${match}</span>`);
-
-  // Apply keyword highlighting with bright green
-  const keywords = KEYWORDS[language] || [];
-  keywords.forEach(keyword => {
-    const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
-    highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword}; font-weight: 700;">${keyword}</span>`);
+  // Protect comments FIRST
+  highlighted = highlighted.replace(/\/\/(.*?)$/gm, (match) => {
+    const placeholder = `__COMMENT_${placeholderIndex}__`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`;
+    placeholderIndex++;
+    return placeholder;
+  });
+  highlighted = highlighted.replace(/#(.*?)$/gm, (match) => {
+    const placeholder = `__COMMENT_${placeholderIndex}__`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`;
+    placeholderIndex++;
+    return placeholder;
   });
 
-  // Highlight function/variable names (words followed by parentheses or equals)
-  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, `<span style="color: #FF00FF; font-weight: 600;">$1</span>(`); // Function names: magenta
-  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g, `<span style="color: #00FFFF;">$1</span>=`); // Variable names: cyan
+  // Protect strings
+  highlighted = highlighted.replace(/"([^"]*)"/g, (_match, content) => {
+    const placeholder = `__STRING_${placeholderIndex}__`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">"${content}"</span>`;
+    placeholderIndex++;
+    return placeholder;
+  });
+  highlighted = highlighted.replace(/'([^']*)'/g, (_match, content) => {
+    const placeholder = `__STRING_${placeholderIndex}__`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">'${content}'</span>`;
+    placeholderIndex++;
+    return placeholder;
+  });
 
-  // Highlight operators and special characters
-  highlighted = highlighted.replace(/([+\-*/%=<>!&|]+)/g, `<span style="color: #FF8800;">$1</span>`); // Operators: orange
-  highlighted = highlighted.replace(/([{}[\]();,.])/g, `<span style="color: #888888;">$1</span>`); // Punctuation: gray
+  // Highlight keywords
+  const keywords = KEYWORDS[language] || [];
+  keywords.forEach(keyword => {
+    const regex = new RegExp(`\\b(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'g');
+    highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword}; font-weight: 700;">$1</span>`);
+  });
+
+  // Highlight function names (before parentheses)
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(\()/g, `<span style="color: #FF00FF; font-weight: 600;">$1</span>$2`);
+
+  // Highlight variable names (before equals)
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(=)/g, `<span style="color: #00DDFF;">$1</span>$2`);
+
+  // Highlight numbers
+  highlighted = highlighted.replace(/\b(\d+)\b/g, `<span style="color: ${theme.number};">$1</span>`);
+
+  // Highlight operators
+  highlighted = highlighted.replace(/([+\-*/%<>!&|]+)/g, `<span style="color: #FF8800;">$1</span>`);
+
+  // Highlight punctuation
+  highlighted = highlighted.replace(/([{}[\]();,.])/g, `<span style="color: #999999;">$1</span>`);
+
+  // Restore protected regions
+  protectedRegions.forEach((region, index) => {
+    const commentPlaceholder = `__COMMENT_${index}__`;
+    const stringPlaceholder = `__STRING_${index}__`;
+    highlighted = highlighted.replace(commentPlaceholder, region);
+    highlighted = highlighted.replace(stringPlaceholder, region);
+  });
 
   return highlighted;
 }
@@ -143,7 +180,9 @@ export function textToCode(text: string, language: CodeLanguage): string {
     },
   ];
 
-  lines.forEach((line) => {
+  let lastPatternIndex = -1;
+
+  lines.forEach((line, index) => {
     if (!line.trim()) {
       codeLines.push('');
       return;
@@ -152,8 +191,13 @@ export function textToCode(text: string, language: CodeLanguage): string {
     // Random indent
     const indent = getRandomIndent();
 
-    // Random pattern
-    const patternIndex = Math.floor(Math.random() * patterns.length);
+    // Random pattern (avoid repeating same pattern twice in a row)
+    let patternIndex = Math.floor(Math.random() * patterns.length);
+    if (patternIndex === lastPatternIndex && patterns.length > 1) {
+      patternIndex = (patternIndex + 1) % patterns.length;
+    }
+    lastPatternIndex = patternIndex;
+
     const pattern = patterns[patternIndex];
     if (!pattern) {
       codeLines.push(`${indent}${line}`);
@@ -162,6 +206,11 @@ export function textToCode(text: string, language: CodeLanguage): string {
     const codeLine = pattern(line, language);
 
     codeLines.push(`${indent}${codeLine}`);
+
+    // Add spacing between code blocks (every 2-3 lines)
+    if (index > 0 && Math.random() > 0.6) {
+      codeLines.push('');
+    }
   });
 
   return codeLines.join('\n');

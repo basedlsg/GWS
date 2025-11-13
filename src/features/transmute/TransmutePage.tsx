@@ -52,17 +52,25 @@ export function TransmutePage() {
     lastCharRef.current = lastTwo;
   }, [triggerTransformation]);
 
-  // Generate stable colored version of text for left side (colors don't change unless text changes significantly)
+  // Generate stable colored version of text for left side (subtle color variation)
   const coloredText = useMemo(() => {
     if (!text) return '';
 
-    const COLORS = ['#00FFFF', '#FF00FF', '#00FF00', '#FFFF00', '#9D00FF', '#FF8800', '#00FF88', '#FF0088'];
+    // Reduced palette - just 3 complementary colors for subtle variation
+    const COLORS = ['#00FFAA', '#00DDCC', '#00CCDD']; // Shades of cyan/teal
 
-    // Use character position to determine color (stable)
-    return text.split('').map((char, index) => {
-      const colorIndex = index % COLORS.length;
-      const color = COLORS[colorIndex];
-      return `<span style="color: ${color}; transition: color 0.3s ease-in-out;">${char === ' ' ? '&nbsp;' : char === '\n' ? '<br/>' : char.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+    // Use word position to determine color (more stable, less chaotic)
+    const words = text.split(/(\s+)/);
+    let colorIndex = 0;
+
+    return words.map((word) => {
+      if (word.trim()) {
+        const color = COLORS[colorIndex % COLORS.length];
+        colorIndex++;
+        const escapedWord = word.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
+        return `<span style="color: ${color}; transition: color 0.3s ease-in-out;">${escapedWord}</span>`;
+      }
+      return word.replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>');
     }).join('');
   }, [text]);
 
