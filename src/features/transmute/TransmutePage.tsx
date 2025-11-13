@@ -3,7 +3,7 @@
  * Simple textarea with real-time code preview - no Slate.js, no complex state management
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Split from 'react-split';
 import { Card } from '@/shared/components/ui/card';
 import { highlightCode, textToCode, MATRIX_THEME, type CodeLanguage } from './utils/simpleHighlight';
@@ -13,23 +13,63 @@ export function TransmutePage() {
   // Simple state - just the text content and language
   const [text, setText] = useState('');
   const [language, setLanguage] = useState<CodeLanguage>('javascript');
+  const [transformedText, setTransformedText] = useState(''); // Debounced version for code preview
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
-  // Generate random colored version of text for left side
+  // Detect double-enter for immediate transformation
+  const lastCharRef = useRef('');
+
+  const triggerTransformation = useCallback(() => {
+    setTransformedText(text);
+  }, [text]);
+
+  // Auto-transform after 5 seconds of no typing
+  useEffect(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      triggerTransformation();
+    }, 5000);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [text, triggerTransformation]);
+
+  // Handle text change with double-enter detection
+  const handleTextChange = useCallback((newText: string) => {
+    setText(newText);
+
+    // Check for double enter (two consecutive newlines)
+    const lastTwo = newText.slice(-2);
+    if (lastTwo === '\n\n' && lastCharRef.current !== '\n\n') {
+      triggerTransformation();
+    }
+    lastCharRef.current = lastTwo;
+  }, [triggerTransformation]);
+
+  // Generate stable colored version of text for left side (colors don't change unless text changes significantly)
   const coloredText = useMemo(() => {
     if (!text) return '';
 
     const COLORS = ['#00FFFF', '#FF00FF', '#00FF00', '#FFFF00', '#9D00FF', '#FF8800', '#00FF88', '#FF0088'];
 
-    return text.split('').map((char) => {
-      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
-      const hasGlow = Math.random() > 0.7; // 30% chance of glow
+    // Use character position to determine color (stable)
+    return text.split('').map((char, index) => {
+      const colorIndex = index % COLORS.length;
+      const color = COLORS[colorIndex];
+      const hasGlow = index % 5 === 0; // Every 5th character glows
       const glowStyle = hasGlow ? `text-shadow: 0 0 10px ${color}` : '';
-      return `<span style="color: ${color}; ${glowStyle}">${char === ' ' ? '&nbsp;' : char === '\n' ? '<br/>' : char.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+      return `<span style="color: ${color}; ${glowStyle}; transition: all 0.3s ease-in-out;">${char === ' ' ? '&nbsp;' : char === '\n' ? '<br/>' : char.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
     }).join('');
   }, [text]);
 
-  // Generate code preview
-  const codeText = useMemo(() => textToCode(text, language), [text, language]);
+  // Generate code preview (only when transformedText changes)
+  const codeText = useMemo(() => textToCode(transformedText, language), [transformedText, language]);
 
   // Apply syntax highlighting
   const highlightedCode = useMemo(() =>
@@ -68,8 +108,15 @@ export function TransmutePage() {
 
         <div className="flex-1" />
 
-        <div className="text-sm text-muted-foreground">
-          {text.length} characters
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            {text.length} characters
+          </div>
+          {text !== transformedText && (
+            <div className="text-xs text-yellow-500 animate-pulse">
+              Transform pending... (Press Enter twice or wait 5s)
+            </div>
+          )}
         </div>
       </div>
 
@@ -101,7 +148,7 @@ export function TransmutePage() {
               {/* Transparent textarea (for typing) */}
               <textarea
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) => handleTextChange(e.target.value)}
                 placeholder=""
                 spellCheck={false}
                 className="relative w-full h-full min-h-full p-0 font-mono text-base border-none outline-none resize-none"
@@ -135,6 +182,8 @@ export function TransmutePage() {
                 dangerouslySetInnerHTML={{ __html: highlightedCode }}
                 style={{
                   fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, monospace',
+                  transition: 'all 0.6s ease-in-out',
+                  opacity: highlightedCode ? 1 : 0.5,
                 }}
               />
             </div>
