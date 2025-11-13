@@ -18,11 +18,11 @@ export interface Theme {
 export const MATRIX_THEME: Theme = {
   name: 'matrix-green',
   background: '#000000',
-  textColor: '#00FF00',
-  keyword: '#00FF00',
-  string: '#00CC00',
-  number: '#00FF88',
-  comment: '#008800',
+  textColor: '#AAAAAA',      // Default text: light gray
+  keyword: '#00FF00',         // Keywords: bright green
+  string: '#00FFFF',          // Strings: cyan
+  number: '#FFFF00',          // Numbers: yellow
+  comment: '#666666',         // Comments: dark gray
 };
 
 // Get random indentation (0-4 levels)
@@ -45,7 +45,7 @@ const KEYWORDS: Record<CodeLanguage, string[]> = {
 };
 
 /**
- * Apply syntax highlighting to code text
+ * Apply syntax highlighting to code text with varied colors
  */
 export function highlightCode(code: string, language: CodeLanguage, theme: Theme): string {
   let highlighted = code;
@@ -56,12 +56,9 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Apply keyword highlighting
-  const keywords = KEYWORDS[language] || [];
-  keywords.forEach(keyword => {
-    const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
-    highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword}; font-weight: 600;">${keyword}</span>`);
-  });
+  // Apply comment highlighting FIRST (must be done before other replacements)
+  highlighted = highlighted.replace(/\/\/(.*?)$/gm, match => `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`);
+  highlighted = highlighted.replace(/#(.*?)$/gm, match => `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`);
 
   // Apply string highlighting (content in quotes)
   highlighted = highlighted.replace(/"([^"]*)"/g, `<span style="color: ${theme.string};">"$1"</span>`);
@@ -70,9 +67,20 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
   // Apply number highlighting
   highlighted = highlighted.replace(/\b\d+\b/g, match => `<span style="color: ${theme.number};">${match}</span>`);
 
-  // Apply comment highlighting (must be done after other replacements)
-  highlighted = highlighted.replace(/\/\/(.*?)$/gm, match => `<span style="color: ${theme.comment};">${match}</span>`);
-  highlighted = highlighted.replace(/#(.*?)$/gm, match => `<span style="color: ${theme.comment};">${match}</span>`);
+  // Apply keyword highlighting with bright green
+  const keywords = KEYWORDS[language] || [];
+  keywords.forEach(keyword => {
+    const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'g');
+    highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword}; font-weight: 700;">${keyword}</span>`);
+  });
+
+  // Highlight function/variable names (words followed by parentheses or equals)
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, `<span style="color: #FF00FF; font-weight: 600;">$1</span>(`); // Function names: magenta
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*=/g, `<span style="color: #00FFFF;">$1</span>=`); // Variable names: cyan
+
+  // Highlight operators and special characters
+  highlighted = highlighted.replace(/([+\-*/%=<>!&|]+)/g, `<span style="color: #FF8800;">$1</span>`); // Operators: orange
+  highlighted = highlighted.replace(/([{}[\]();,.])/g, `<span style="color: #888888;">$1</span>`); // Punctuation: gray
 
   return highlighted;
 }

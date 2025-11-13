@@ -62,9 +62,7 @@ export function TransmutePage() {
     return text.split('').map((char, index) => {
       const colorIndex = index % COLORS.length;
       const color = COLORS[colorIndex];
-      const hasGlow = index % 5 === 0; // Every 5th character glows
-      const glowStyle = hasGlow ? `text-shadow: 0 0 10px ${color}` : '';
-      return `<span style="color: ${color}; ${glowStyle}; transition: all 0.3s ease-in-out;">${char === ' ' ? '&nbsp;' : char === '\n' ? '<br/>' : char.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+      return `<span style="color: ${color}; transition: color 0.3s ease-in-out;">${char === ' ' ? '&nbsp;' : char === '\n' ? '<br/>' : char.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
     }).join('');
   }, [text]);
 
