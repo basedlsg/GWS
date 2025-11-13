@@ -16,10 +16,28 @@ export function TransmutePage() {
   const [transformedText, setTransformedText] = useState(''); // Debounced version for code preview
   const [codeHistory, setCodeHistory] = useState<string[]>([]); // Store transformed code blocks
   const [lastTransformedLength, setLastTransformedLength] = useState(0);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const saveStatusTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Detect double-enter for immediate transformation
   const lastCharRef = useRef('');
+
+  // Load saved content on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('gws:transmute:autosave');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        setText(data.text || '');
+        setLanguage(data.language || 'javascript');
+        setCodeHistory(data.codeHistory || []);
+        setLastTransformedLength(data.text?.length || 0);
+      } catch (error) {
+        console.error('Failed to load saved content:', error);
+      }
+    }
+  }, []);
 
   const triggerTransformation = useCallback(() => {
     if (text.length > lastTransformedLength) {
@@ -31,6 +49,50 @@ export function TransmutePage() {
     }
     setTransformedText(text);
   }, [text, language, lastTransformedLength]);
+
+  // Save to localStorage
+  const saveToLocalStorage = useCallback(() => {
+    setSaveStatus('saving');
+    try {
+      const data = {
+        text,
+        language,
+        codeHistory,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem('gws:transmute:autosave', JSON.stringify(data));
+      setSaveStatus('saved');
+
+      // Clear save status after 2 seconds
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current);
+      }
+      saveStatusTimeoutRef.current = setTimeout(() => {
+        setSaveStatus('idle');
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to save:', error);
+      setSaveStatus('idle');
+    }
+  }, [text, language, codeHistory]);
+
+  // Keyboard shortcut handler (Cmd+S or Ctrl+S)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        saveToLocalStorage();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (saveStatusTimeoutRef.current) {
+        clearTimeout(saveStatusTimeoutRef.current);
+      }
+    };
+  }, [saveToLocalStorage]);
 
   // Auto-transform after 5 seconds of no typing
   useEffect(() => {
@@ -140,11 +202,26 @@ export function TransmutePage() {
           <div className="text-sm text-muted-foreground">
             {text.length} characters
           </div>
+          {saveStatus === 'saved' && (
+            <div className="text-xs text-green-500 flex items-center gap-1">
+              <span>✓</span>
+              <span>Saved</span>
+            </div>
+          )}
+          {saveStatus === 'saving' && (
+            <div className="text-xs text-blue-500 flex items-center gap-1">
+              <span className="animate-spin">⟳</span>
+              <span>Saving...</span>
+            </div>
+          )}
           {text !== transformedText && (
             <div className="text-xs text-yellow-500 animate-pulse">
               Transform pending... (Press Enter twice or wait 5s)
             </div>
           )}
+          <div className="text-xs text-muted-foreground">
+            Press <kbd className="px-1.5 py-0.5 bg-muted rounded text-xs">Cmd+S</kbd> to save
+          </div>
         </div>
       </div>
 
