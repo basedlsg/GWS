@@ -97,7 +97,7 @@ export function TransmutePage() {
   }, [text]);
 
   // Generate code preview from history (appending new blocks)
-  const codeText = useMemo(() => codeHistory.join('\n\n'), [codeHistory]);
+  const codeText = useMemo(() => codeHistory.join('\n'), [codeHistory]);
 
   // Apply syntax highlighting
   const highlightedCode = useMemo(() =>
@@ -206,12 +206,13 @@ export function TransmutePage() {
             </div>
             <div className="flex-1 overflow-auto p-4">
               <pre
-                className="font-mono text-sm leading-relaxed m-0"
+                className="font-mono text-sm m-0"
                 dangerouslySetInnerHTML={{ __html: highlightedCode }}
                 style={{
                   fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, monospace',
                   transition: 'all 0.6s ease-in-out',
                   opacity: highlightedCode ? 1 : 0.5,
+                  lineHeight: '1.5',
                 }}
               />
             </div>

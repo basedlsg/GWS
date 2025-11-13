@@ -223,8 +223,8 @@ export function textToCode(text: string, language: CodeLanguage): string {
 
     codeLines.push(`${indent}${codeLine}`);
 
-    // Add spacing between code blocks (every 2-3 lines)
-    if (index > 0 && Math.random() > 0.6) {
+    // Add occasional spacing between code blocks (20% chance)
+    if (index > 0 && Math.random() > 0.8) {
       codeLines.push('');
     }
   });
