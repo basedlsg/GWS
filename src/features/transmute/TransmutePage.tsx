@@ -14,6 +14,20 @@ export function TransmutePage() {
   const [text, setText] = useState('');
   const [language, setLanguage] = useState<CodeLanguage>('javascript');
 
+  // Generate random colored version of text for left side
+  const coloredText = useMemo(() => {
+    if (!text) return '';
+
+    const COLORS = ['#00FFFF', '#FF00FF', '#00FF00', '#FFFF00', '#9D00FF', '#FF8800', '#00FF88', '#FF0088'];
+
+    return text.split('').map((char) => {
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const hasGlow = Math.random() > 0.7; // 30% chance of glow
+      const glowStyle = hasGlow ? `text-shadow: 0 0 10px ${color}` : '';
+      return `<span style="color: ${color}; ${glowStyle}">${char === ' ' ? '&nbsp;' : char === '\n' ? '<br/>' : char.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span>`;
+    }).join('');
+  }, [text]);
+
   // Generate code preview
   const codeText = useMemo(() => textToCode(text, language), [text, language]);
 
@@ -68,20 +82,35 @@ export function TransmutePage() {
           gutterSize={10}
           style={{ display: 'flex', height: '100%' }}
         >
-          {/* Left: Text Editor */}
-          <Card className="overflow-hidden flex flex-col">
-            <div className="p-4 border-b">
+          {/* Left: Text Editor with Colored Overlay */}
+          <Card className="overflow-hidden flex flex-col" style={{ backgroundColor: '#0a0a0a' }}>
+            <div className="p-4 border-b" style={{ borderColor: '#333' }}>
               <h2 className="text-lg font-semibold">Editor</h2>
             </div>
-            <div className="flex-1 overflow-auto p-4">
+            <div className="flex-1 overflow-auto p-4 relative">
+              {/* Colored text overlay (shows through transparent textarea) */}
+              <div
+                className="absolute inset-0 p-4 font-mono text-base pointer-events-none whitespace-pre-wrap break-words"
+                style={{
+                  fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, monospace',
+                  lineHeight: '1.5',
+                  overflowWrap: 'break-word',
+                }}
+                dangerouslySetInnerHTML={{ __html: coloredText || '<span style="color: #666;">Start typing...</span>' }}
+              />
+              {/* Transparent textarea (for typing) */}
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="Start typing..."
+                placeholder=""
                 spellCheck={false}
-                className="w-full h-full min-h-full p-0 font-mono text-base bg-transparent border-none outline-none resize-none"
+                className="relative w-full h-full min-h-full p-0 font-mono text-base border-none outline-none resize-none"
                 style={{
                   fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, monospace',
+                  backgroundColor: 'transparent',
+                  color: 'transparent',
+                  caretColor: '#00FF00',
+                  lineHeight: '1.5',
                 }}
               />
             </div>

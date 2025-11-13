@@ -1,6 +1,6 @@
 /**
- * Simple Syntax Highlighter
- * Basic code highlighting without dependencies
+ * Simple Syntax Highlighter with Randomization
+ * Creates beautiful, varied code with random indentation and colors
  */
 
 export type CodeLanguage = 'javascript' | 'python' | 'rust' | 'go' | 'cpp' | 'ruby' | 'java';
@@ -24,6 +24,12 @@ export const MATRIX_THEME: Theme = {
   number: '#00FF88',
   comment: '#008800',
 };
+
+// Get random indentation (0-4 levels)
+function getRandomIndent(): string {
+  const levels = Math.floor(Math.random() * 5);
+  return '  '.repeat(levels);
+}
 
 /**
  * Keywords for syntax highlighting
@@ -72,7 +78,8 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
 }
 
 /**
- * Transform plain text to code-like structure
+ * Transform plain text to beautiful, varied code-like structure
+ * Each line gets random treatment - variables, functions, objects, etc.
  */
 export function textToCode(text: string, language: CodeLanguage): string {
   if (!text.trim()) {
@@ -82,15 +89,71 @@ export function textToCode(text: string, language: CodeLanguage): string {
   const lines = text.split('\n');
   const codeLines: string[] = [];
 
+  // Code patterns to randomly choose from
+  const patterns = [
+    (text: string, lang: CodeLanguage) => {
+      // Variable declaration
+      const varKeyword = lang === 'python' ? '' : lang === 'rust' ? 'let ' : lang === 'go' ? 'var ' : 'const ';
+      const varName = (text.split(' ')[0] || 'var').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return `${varKeyword}${varName} = "${text}";`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Function call
+      const words = text.split(' ').filter(w => w.length > 0);
+      const funcName = (words[0] || 'func').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return `${funcName}("${text}");`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Object property
+      const key = (text.split(' ')[0] || 'key').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return `${key}: "${text}",`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Array element
+      return `"${text}",`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Method call with chaining
+      const words = text.split(' ').filter(w => w.length > 0);
+      const method = (words[0] || 'method').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return `.${method}("${text}")`;
+    },
+    (text: string, lang: CodeLanguage) => {
+      // Comment (occasionally)
+      const comment = lang === 'python' || lang === 'ruby' ? '#' : '//';
+      return `${comment} ${text}`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Return statement
+      return `return "${text}";`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Conditional
+      const words = text.split(' ').filter(w => w.length > 0);
+      const condition = (words[0] || 'condition').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return `if (${condition}) { // ${text}`;
+    },
+  ];
+
   lines.forEach((line) => {
     if (!line.trim()) {
       codeLines.push('');
       return;
     }
 
-    // Simple transformation - just add comment syntax
-    const comment = language === 'python' || language === 'ruby' ? '#' : '//';
-    codeLines.push(`${comment} ${line}`);
+    // Random indent
+    const indent = getRandomIndent();
+
+    // Random pattern
+    const patternIndex = Math.floor(Math.random() * patterns.length);
+    const pattern = patterns[patternIndex];
+    if (!pattern) {
+      codeLines.push(`${indent}${line}`);
+      return;
+    }
+    const codeLine = pattern(line, language);
+
+    codeLines.push(`${indent}${codeLine}`);
   });
 
   return codeLines.join('\n');
