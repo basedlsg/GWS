@@ -134,49 +134,65 @@ export function textToCode(text: string, language: CodeLanguage): string {
   const lines = text.split('\n');
   const codeLines: string[] = [];
 
-  // Code patterns to randomly choose from
+  // Code patterns to randomly choose from (varied to use different syntax elements)
   const patterns = [
     (text: string, lang: CodeLanguage) => {
-      // Variable declaration
+      // Variable declaration with varied syntax
       const varKeyword = lang === 'python' ? '' : lang === 'rust' ? 'let ' : lang === 'go' ? 'var ' : 'const ';
       const varName = (text.split(' ')[0] || 'var').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      return `${varKeyword}${varName} = "${text}";`;
-    },
-    (text: string, _lang: CodeLanguage) => {
-      // Function call
-      const words = text.split(' ').filter(w => w.length > 0);
-      const funcName = (words[0] || 'func').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      return `${funcName}("${text}");`;
-    },
-    (text: string, _lang: CodeLanguage) => {
-      // Object property
-      const key = (text.split(' ')[0] || 'key').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      return `${key}: "${text}",`;
-    },
-    (text: string, _lang: CodeLanguage) => {
-      // Array element
-      return `"${text}",`;
-    },
-    (text: string, _lang: CodeLanguage) => {
-      // Method call with chaining
-      const words = text.split(' ').filter(w => w.length > 0);
-      const method = (words[0] || 'method').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      return `.${method}("${text}")`;
+      const value = Math.random() > 0.5 ? `"${text}"` : Math.floor(Math.random() * 100);
+      return `${varKeyword}${varName} = ${value};`;
     },
     (text: string, lang: CodeLanguage) => {
-      // Comment (occasionally)
+      // Function declaration
+      const funcName = (text.split(' ')[0] || 'func').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const keyword = lang === 'python' ? 'def ' : lang === 'rust' ? 'fn ' : lang === 'go' ? 'func ' : 'function ';
+      return `${keyword}${funcName}() { return "${text}"; }`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Function call with multiple params
+      const words = text.split(' ').filter(w => w.length > 0);
+      const funcName = (words[0] || 'func').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const param1 = Math.floor(Math.random() * 50);
+      return `${funcName}("${text}", ${param1});`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Object with properties
+      const key = (text.split(' ')[0] || 'key').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return `{ ${key}: "${text}", value: ${Math.floor(Math.random() * 100)} }`;
+    },
+    (text: string, _lang: CodeLanguage) => {
+      // Array with mixed types
+      return `["${text}", ${Math.floor(Math.random() * 50)}, true]`;
+    },
+    (text: string, lang: CodeLanguage) => {
+      // Conditional with operators
+      const words = text.split(' ').filter(w => w.length > 0);
+      const varName = (words[0] || 'value').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const keyword = lang === 'python' ? 'if' : 'if';
+      const num = Math.floor(Math.random() * 20);
+      return `${keyword} (${varName} > ${num}) { return "${text}"; }`;
+    },
+    (text: string, lang: CodeLanguage) => {
+      // For loop
+      const keyword = lang === 'python' ? 'for' : 'for';
+      return `${keyword} (let i = 0; i < 10; i++) { // ${text}`;
+    },
+    (text: string, lang: CodeLanguage) => {
+      // Comment
       const comment = lang === 'python' || lang === 'ruby' ? '#' : '//';
       return `${comment} ${text}`;
     },
     (text: string, _lang: CodeLanguage) => {
-      // Return statement
-      return `return "${text}";`;
+      // Return with operations
+      const num1 = Math.floor(Math.random() * 30);
+      const num2 = Math.floor(Math.random() * 30);
+      return `return ${num1} + ${num2}; // ${text}`;
     },
     (text: string, _lang: CodeLanguage) => {
-      // Conditional
-      const words = text.split(' ').filter(w => w.length > 0);
-      const condition = (words[0] || 'condition').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      return `if (${condition}) { // ${text}`;
+      // Class method
+      const method = (text.split(' ')[0] || 'method').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return `class.${method}("${text}");`;
     },
   ];
 

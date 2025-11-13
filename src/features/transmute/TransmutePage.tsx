@@ -14,14 +14,23 @@ export function TransmutePage() {
   const [text, setText] = useState('');
   const [language, setLanguage] = useState<CodeLanguage>('javascript');
   const [transformedText, setTransformedText] = useState(''); // Debounced version for code preview
+  const [codeHistory, setCodeHistory] = useState<string[]>([]); // Store transformed code blocks
+  const [lastTransformedLength, setLastTransformedLength] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
   // Detect double-enter for immediate transformation
   const lastCharRef = useRef('');
 
   const triggerTransformation = useCallback(() => {
+    if (text.length > lastTransformedLength) {
+      // Only transform new content
+      const newContent = text.slice(lastTransformedLength);
+      const newCodeBlock = textToCode(newContent, language);
+      setCodeHistory(prev => [...prev, newCodeBlock]);
+      setLastTransformedLength(text.length);
+    }
     setTransformedText(text);
-  }, [text]);
+  }, [text, language, lastTransformedLength]);
 
   // Auto-transform after 5 seconds of no typing
   useEffect(() => {
@@ -52,21 +61,34 @@ export function TransmutePage() {
     lastCharRef.current = lastTwo;
   }, [triggerTransformation]);
 
-  // Generate stable colored version of text for left side (subtle color variation)
+  // Generate stable colored version of text for left side (with variety)
   const coloredText = useMemo(() => {
     if (!text) return '';
 
-    // Reduced palette - just 3 complementary colors for subtle variation
-    const COLORS = ['#00FFAA', '#00DDCC', '#00CCDD']; // Shades of cyan/teal
+    // Base colors (cyan/teal) + jarring colors for variety
+    const BASE_COLORS = ['#00FFAA', '#00DDCC', '#00CCDD']; // Shades of cyan/teal
 
-    // Use word position to determine color (more stable, less chaotic)
+    // Use word position to determine color with random variety
     const words = text.split(/(\s+)/);
-    let colorIndex = 0;
 
     return words.map((word) => {
       if (word.trim()) {
-        const color = COLORS[colorIndex % COLORS.length];
-        colorIndex++;
+        // Random color selection with weights
+        const rand = Math.random() * 100;
+        let color: string;
+
+        if (rand < 2) {
+          // 2% chance: yellow (very rare, eye-catching)
+          color = '#FFFF00';
+        } else if (rand < 32) {
+          // 30% chance: magenta (jarring contrast)
+          color = '#FF00FF';
+        } else {
+          // 68% chance: one of the base cyan/teal colors
+          const colorIndex = Math.floor(Math.random() * BASE_COLORS.length);
+          color = BASE_COLORS[colorIndex]!;
+        }
+
         const escapedWord = word.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
         return `<span style="color: ${color}; transition: color 0.3s ease-in-out;">${escapedWord}</span>`;
       }
@@ -74,8 +96,8 @@ export function TransmutePage() {
     }).join('');
   }, [text]);
 
-  // Generate code preview (only when transformedText changes)
-  const codeText = useMemo(() => textToCode(transformedText, language), [transformedText, language]);
+  // Generate code preview from history (appending new blocks)
+  const codeText = useMemo(() => codeHistory.join('\n\n'), [codeHistory]);
 
   // Apply syntax highlighting
   const highlightedCode = useMemo(() =>
