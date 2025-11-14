@@ -239,7 +239,7 @@ export function TransmutePage() {
             <div className="p-4 border-b" style={{ borderColor: '#333' }}>
               <h2 className="text-lg font-semibold">Editor</h2>
             </div>
-            <div className="flex-1 overflow-auto p-4 relative">
+            <div className="flex-1 overflow-auto relative">
               {/* Colored text overlay (shows through transparent textarea) */}
               <div
                 className="absolute inset-0 p-4 font-mono text-base pointer-events-none whitespace-pre-wrap break-words"
@@ -256,7 +256,7 @@ export function TransmutePage() {
                 onChange={(e) => handleTextChange(e.target.value)}
                 placeholder=""
                 spellCheck={false}
-                className="relative w-full h-full min-h-full p-0 font-mono text-base border-none outline-none resize-none"
+                className="relative w-full h-full min-h-full p-4 font-mono text-base border-none outline-none resize-none"
                 style={{
                   fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, monospace',
                   backgroundColor: 'transparent',
