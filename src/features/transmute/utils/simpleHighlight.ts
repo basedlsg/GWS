@@ -153,6 +153,8 @@ export function textToCode(text: string, language: CodeLanguage): string {
   // Pool of realistic variable/function names for variety
   const VAR_NAMES = ['data', 'result', 'value', 'item', 'config', 'options', 'state', 'content', 'element', 'response'];
   const FUNC_NAMES = ['process', 'handle', 'update', 'fetch', 'render', 'validate', 'transform', 'calculate', 'initialize', 'execute'];
+  const STRING_VALUES = ['success', 'error', 'pending', 'active', 'disabled', 'loaded', 'ready', 'complete', 'failed', 'processing'];
+  const OBJECT_KEYS = ['id', 'name', 'type', 'status', 'count', 'index', 'key', 'label', 'title', 'description'];
 
   // Simple hash for deterministic selection
   const hashCode = (str: string): number => {
@@ -164,64 +166,107 @@ export function textToCode(text: string, language: CodeLanguage): string {
     return Math.abs(hash);
   };
 
-  // Code patterns to randomly choose from (varied to use different syntax elements)
+  // Code patterns with much more variety - not always using user text
   const patterns = [
     (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // Variable declaration with varied syntax
+      // Variable with number
       const varKeyword = lang === 'python' ? '' : lang === 'rust' ? 'let ' : lang === 'go' ? 'var ' : 'const ';
       const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const value = (hashCode(text) % 2 === 0) ? `"${text}"` : Math.floor(hashCode(text) % 100);
-      return `${varKeyword}${varName} = ${value};`;
+      const num = Math.floor(hashCode(text + lineIndex) % 1000);
+      return `${varKeyword}${varName} = ${num};`;
     },
     (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // Function declaration
+      // Variable with string value (not user's text)
+      const varKeyword = lang === 'python' ? '' : lang === 'rust' ? 'let ' : lang === 'go' ? 'var ' : 'const ';
+      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
+      const strValue = STRING_VALUES[hashCode(text + lineIndex + 1) % STRING_VALUES.length]!;
+      return `${varKeyword}${varName} = "${strValue}";`;
+    },
+    (text: string, lang: CodeLanguage, lineIndex: number) => {
+      // Function declaration with return value
       const funcName = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
       const keyword = lang === 'python' ? 'def ' : lang === 'rust' ? 'fn ' : lang === 'go' ? 'func ' : 'function ';
-      return `${keyword}${funcName}() { return "${text}"; }`;
+      const retVal = hashCode(text + lineIndex) % 3 === 0 ? 'true' : (hashCode(text) % 2 === 0 ? 'null' : Math.floor(hashCode(text) % 100).toString());
+      return `${keyword}${funcName}() { return ${retVal}; }`;
     },
     (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Function call with multiple params
+      // Function call with varied params
       const funcName = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
-      const param1 = Math.floor(hashCode(text) % 50);
-      return `${funcName}("${text}", ${param1});`;
+      const param1 = VAR_NAMES[hashCode(text) % VAR_NAMES.length]!;
+      const param2 = Math.floor(hashCode(text + lineIndex) % 50);
+      return `${funcName}(${param1}, ${param2});`;
     },
     (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Object with properties
-      const key = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      return `{ ${key}: "${text}", value: ${Math.floor(hashCode(text) % 100)} }`;
+      // Object with multiple properties
+      const key1 = OBJECT_KEYS[hashCode(text + lineIndex) % OBJECT_KEYS.length]!;
+      const key2 = OBJECT_KEYS[(hashCode(text + lineIndex) + 1) % OBJECT_KEYS.length]!;
+      const num = Math.floor(hashCode(text) % 100);
+      return `{ ${key1}: ${num}, ${key2}: true }`;
     },
-    (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Array with mixed types
-      const num = Math.floor(hashCode(text + lineIndex) % 50);
-      return `["${text}", ${num}, true]`;
+    (text: string, _lang: CodeLanguage, _lineIndex: number) => {
+      // Array with realistic values
+      const val1 = STRING_VALUES[hashCode(text) % STRING_VALUES.length]!;
+      const val2 = STRING_VALUES[(hashCode(text) + 1) % STRING_VALUES.length]!;
+      return `["${val1}", "${val2}"]`;
     },
     (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // Conditional with operators
+      // Conditional with comparison
       const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
       const keyword = lang === 'python' ? 'if' : 'if';
       const num = Math.floor(hashCode(text) % 20);
-      return `${keyword} (${varName} > ${num}) { return "${text}"; }`;
+      const operator = hashCode(text) % 2 === 0 ? '>' : '===';
+      const compareVal = operator === '>' ? num.toString() : `"${STRING_VALUES[hashCode(text) % STRING_VALUES.length]!}"`;
+      return `${keyword} (${varName} ${operator} ${compareVal}) { }`;
     },
-    (text: string, lang: CodeLanguage) => {
-      // For loop
+    (text: string, lang: CodeLanguage, lineIndex: number) => {
+      // For loop with array iteration
+      const arrName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
       const keyword = lang === 'python' ? 'for' : 'for';
-      return `${keyword} (let i = 0; i < 10; i++) { // ${text}`;
+      return `${keyword} (const item of ${arrName}) { }`;
     },
     (text: string, lang: CodeLanguage) => {
-      // Comment
+      // Comment with user's text (only place we use it)
       const comment = lang === 'python' || lang === 'ruby' ? '#' : '//';
       return `${comment} ${text}`;
     },
     (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Return with operations
-      const num1 = Math.floor(hashCode(text + lineIndex) % 30);
-      const num2 = Math.floor(hashCode(text + lineIndex + 1) % 30);
-      return `return ${num1} + ${num2}; // ${text}`;
+      // Return with variable operation
+      const var1 = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
+      const var2 = VAR_NAMES[(hashCode(text + lineIndex) + 1) % VAR_NAMES.length]!;
+      const operator = ['+', '-', '*', '||', '&&'][hashCode(text) % 5]!;
+      return `return ${var1} ${operator} ${var2};`;
     },
     (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Class method
-      const method = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
-      return `class.${method}("${text}");`;
+      // Method chaining
+      const method1 = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
+      const method2 = FUNC_NAMES[(hashCode(text + lineIndex) + 1) % FUNC_NAMES.length]!;
+      return `data.${method1}().${method2}();`;
+    },
+    (text: string, _lang: CodeLanguage, lineIndex: number) => {
+      // Assignment with object property
+      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
+      const objKey = OBJECT_KEYS[hashCode(text) % OBJECT_KEYS.length]!;
+      const num = Math.floor(hashCode(text + lineIndex) % 100);
+      return `${varName}.${objKey} = ${num};`;
+    },
+    (text: string, _lang: CodeLanguage, lineIndex: number) => {
+      // Ternary expression
+      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
+      const val1 = STRING_VALUES[hashCode(text) % STRING_VALUES.length]!;
+      const val2 = STRING_VALUES[(hashCode(text) + 1) % STRING_VALUES.length]!;
+      return `${varName} ? "${val1}" : "${val2}"`;
+    },
+    (text: string, lang: CodeLanguage, lineIndex: number) => {
+      // Switch/match statement start
+      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
+      const keyword = lang === 'rust' ? 'match' : 'switch';
+      return `${keyword} (${varName}) {`;
+    },
+    (text: string, _lang: CodeLanguage, lineIndex: number) => {
+      // Array method
+      const arrName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
+      const method = ['map', 'filter', 'reduce', 'find', 'some'][hashCode(text) % 5]!;
+      return `${arrName}.${method}(item => item)`;
     },
   ];
 
