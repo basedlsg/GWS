@@ -129,25 +129,38 @@ export function TransmutePage() {
 
     // Base colors (cyan/teal) + jarring colors for variety
     const BASE_COLORS = ['#00FFAA', '#00DDCC', '#00CCDD']; // Shades of cyan/teal
+    const MAGENTA = '#FF00FF';
+    const YELLOW = '#FFFF00';
 
-    // Use word position to determine color with random variety
+    // Simple hash function for deterministic color selection
+    const hashString = (str: string): number => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash = hash & hash; // Convert to 32bit integer
+      }
+      return Math.abs(hash);
+    };
+
+    // Use word position to determine color deterministically
     const words = text.split(/(\s+)/);
 
-    return words.map((word) => {
+    return words.map((word, index) => {
       if (word.trim()) {
-        // Random color selection with weights
-        const rand = Math.random() * 100;
+        // Use hash of word + position for stable color selection
+        const seed = hashString(word + index);
+        const rand = seed % 100;
         let color: string;
 
         if (rand < 2) {
           // 2% chance: yellow (very rare, eye-catching)
-          color = '#FFFF00';
+          color = YELLOW;
         } else if (rand < 32) {
           // 30% chance: magenta (jarring contrast)
-          color = '#FF00FF';
+          color = MAGENTA;
         } else {
           // 68% chance: one of the base cyan/teal colors
-          const colorIndex = Math.floor(Math.random() * BASE_COLORS.length);
+          const colorIndex = seed % BASE_COLORS.length;
           color = BASE_COLORS[colorIndex]!;
         }
 

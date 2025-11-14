@@ -25,12 +25,6 @@ export const MATRIX_THEME: Theme = {
   comment: '#666666',         // Comments: dark gray
 };
 
-// Get random indentation (0-4 levels)
-function getRandomIndent(): string {
-  const levels = Math.floor(Math.random() * 5);
-  return '  '.repeat(levels);
-}
-
 /**
  * Keywords for syntax highlighting
  */
@@ -156,43 +150,56 @@ export function textToCode(text: string, language: CodeLanguage): string {
   const lines = text.split('\n');
   const codeLines: string[] = [];
 
+  // Pool of realistic variable/function names for variety
+  const VAR_NAMES = ['data', 'result', 'value', 'item', 'config', 'options', 'state', 'content', 'element', 'response'];
+  const FUNC_NAMES = ['process', 'handle', 'update', 'fetch', 'render', 'validate', 'transform', 'calculate', 'initialize', 'execute'];
+
+  // Simple hash for deterministic selection
+  const hashCode = (str: string): number => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return Math.abs(hash);
+  };
+
   // Code patterns to randomly choose from (varied to use different syntax elements)
   const patterns = [
-    (text: string, lang: CodeLanguage) => {
+    (text: string, lang: CodeLanguage, lineIndex: number) => {
       // Variable declaration with varied syntax
       const varKeyword = lang === 'python' ? '' : lang === 'rust' ? 'let ' : lang === 'go' ? 'var ' : 'const ';
-      const varName = (text.split(' ')[0] || 'var').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const value = Math.random() > 0.5 ? `"${text}"` : Math.floor(Math.random() * 100);
+      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
+      const value = (hashCode(text) % 2 === 0) ? `"${text}"` : Math.floor(hashCode(text) % 100);
       return `${varKeyword}${varName} = ${value};`;
     },
-    (text: string, lang: CodeLanguage) => {
+    (text: string, lang: CodeLanguage, lineIndex: number) => {
       // Function declaration
-      const funcName = (text.split(' ')[0] || 'func').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const funcName = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
       const keyword = lang === 'python' ? 'def ' : lang === 'rust' ? 'fn ' : lang === 'go' ? 'func ' : 'function ';
       return `${keyword}${funcName}() { return "${text}"; }`;
     },
-    (text: string, _lang: CodeLanguage) => {
+    (text: string, _lang: CodeLanguage, lineIndex: number) => {
       // Function call with multiple params
-      const words = text.split(' ').filter(w => w.length > 0);
-      const funcName = (words[0] || 'func').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      const param1 = Math.floor(Math.random() * 50);
+      const funcName = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
+      const param1 = Math.floor(hashCode(text) % 50);
       return `${funcName}("${text}", ${param1});`;
     },
-    (text: string, _lang: CodeLanguage) => {
+    (text: string, _lang: CodeLanguage, lineIndex: number) => {
       // Object with properties
-      const key = (text.split(' ')[0] || 'key').toLowerCase().replace(/[^a-z0-9]/g, '_');
-      return `{ ${key}: "${text}", value: ${Math.floor(Math.random() * 100)} }`;
+      const key = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
+      return `{ ${key}: "${text}", value: ${Math.floor(hashCode(text) % 100)} }`;
     },
-    (text: string, _lang: CodeLanguage) => {
+    (text: string, _lang: CodeLanguage, lineIndex: number) => {
       // Array with mixed types
-      return `["${text}", ${Math.floor(Math.random() * 50)}, true]`;
+      const num = Math.floor(hashCode(text + lineIndex) % 50);
+      return `["${text}", ${num}, true]`;
     },
-    (text: string, lang: CodeLanguage) => {
+    (text: string, lang: CodeLanguage, lineIndex: number) => {
       // Conditional with operators
-      const words = text.split(' ').filter(w => w.length > 0);
-      const varName = (words[0] || 'value').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
       const keyword = lang === 'python' ? 'if' : 'if';
-      const num = Math.floor(Math.random() * 20);
+      const num = Math.floor(hashCode(text) % 20);
       return `${keyword} (${varName} > ${num}) { return "${text}"; }`;
     },
     (text: string, lang: CodeLanguage) => {
@@ -205,15 +212,15 @@ export function textToCode(text: string, language: CodeLanguage): string {
       const comment = lang === 'python' || lang === 'ruby' ? '#' : '//';
       return `${comment} ${text}`;
     },
-    (text: string, _lang: CodeLanguage) => {
+    (text: string, _lang: CodeLanguage, lineIndex: number) => {
       // Return with operations
-      const num1 = Math.floor(Math.random() * 30);
-      const num2 = Math.floor(Math.random() * 30);
+      const num1 = Math.floor(hashCode(text + lineIndex) % 30);
+      const num2 = Math.floor(hashCode(text + lineIndex + 1) % 30);
       return `return ${num1} + ${num2}; // ${text}`;
     },
-    (text: string, _lang: CodeLanguage) => {
+    (text: string, _lang: CodeLanguage, lineIndex: number) => {
       // Class method
-      const method = (text.split(' ')[0] || 'method').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const method = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
       return `class.${method}("${text}");`;
     },
   ];
@@ -226,11 +233,12 @@ export function textToCode(text: string, language: CodeLanguage): string {
       return;
     }
 
-    // Random indent
-    const indent = getRandomIndent();
+    // Deterministic indent based on line content
+    const indentLevel = hashCode(line + index) % 5;
+    const indent = '  '.repeat(indentLevel);
 
-    // Random pattern (avoid repeating same pattern twice in a row)
-    let patternIndex = Math.floor(Math.random() * patterns.length);
+    // Deterministic pattern selection (avoid repeating same pattern twice in a row)
+    let patternIndex = hashCode(line + index) % patterns.length;
     if (patternIndex === lastPatternIndex && patterns.length > 1) {
       patternIndex = (patternIndex + 1) % patterns.length;
     }
@@ -241,12 +249,12 @@ export function textToCode(text: string, language: CodeLanguage): string {
       codeLines.push(`${indent}${line}`);
       return;
     }
-    const codeLine = pattern(line, language);
+    const codeLine = pattern(line, language, index);
 
     codeLines.push(`${indent}${codeLine}`);
 
-    // Add occasional spacing between code blocks (20% chance)
-    if (index > 0 && Math.random() > 0.8) {
+    // Add occasional spacing between code blocks (20% chance, deterministic)
+    if (index > 0 && (hashCode(line + index) % 5) === 0) {
       codeLines.push('');
     }
   });
