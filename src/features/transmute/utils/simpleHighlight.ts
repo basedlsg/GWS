@@ -1,6 +1,5 @@
 /**
  * Simple Syntax Highlighter with Realistic Code Generation
- * Transforms plain text into convincing code-like output
  */
 
 export type CodeLanguage = 'javascript' | 'python' | 'rust' | 'go' | 'cpp' | 'ruby' | 'java';
@@ -91,140 +90,112 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
 }
 
 /**
- * Transform plain text into realistic short code lines
+ * Transform plain text into realistic random code
  */
 export function textToCode(text: string, language: CodeLanguage): string {
-  if (!text.trim()) {
-    return 'loading...';
-  }
+  if (!text.trim()) return '';
 
-  const hash = (str: string, seed = 0): number => {
-    let h = seed;
-    for (let i = 0; i < str.length; i++) {
-      h = ((h << 5) - h) + str.charCodeAt(i);
-      h = h & h;
-    }
-    return Math.abs(h);
+  // Seeded random based on text
+  let seed = 0;
+  for (let i = 0; i < text.length; i++) {
+    seed = ((seed << 5) - seed) + text.charCodeAt(i);
+    seed = seed & seed;
+  }
+  seed = Math.abs(seed);
+
+  const rand = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed;
   };
 
-  // Short variable names
-  const VARS = ['x', 'y', 'n', 'i', 'j', 'k', 'a', 'b', 'c', 'd', 'e', 'm', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w'];
-  const NAMES = ['data', 'item', 'node', 'val', 'key', 'idx', 'len', 'cnt', 'sum', 'max', 'min', 'tmp', 'res', 'out', 'buf', 'ptr', 'obj', 'arr', 'str', 'num'];
-  const FUNCS = ['get', 'set', 'add', 'del', 'put', 'pop', 'run', 'init', 'load', 'save', 'read', 'send', 'recv', 'open', 'close', 'find', 'sort', 'push', 'pull', 'sync'];
-  const PROPS = ['id', 'len', 'key', 'val', 'pos', 'size', 'next', 'prev', 'left', 'right', 'head', 'tail', 'root', 'name', 'type', 'flag'];
-  const TYPES = ['Node', 'Item', 'List', 'Map', 'Set', 'Vec', 'Buf', 'Ctx', 'Req', 'Res'];
+  const pick = <T>(arr: T[]): T => arr[rand() % arr.length]!;
+  const num = () => rand() % 256;
+  const small = () => rand() % 20;
+  const chance = (pct: number) => (rand() % 100) < pct;
 
-  const pick = <T>(arr: T[], seed: number): T => arr[seed % arr.length]!;
-  const num = (seed: number) => (seed % 99) + 1;
+  // Variable pools
+  const v1 = ['x', 'y', 'z', 'i', 'j', 'k', 'n', 'm', 'p', 'q'];
+  const v2 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 's', 't'];
+  const names = ['data', 'item', 'node', 'val', 'key', 'buf', 'tmp', 'res', 'ptr', 'idx', 'len', 'cnt', 'pos', 'cur', 'prev', 'next', 'src', 'dst', 'out', 'err'];
+  const fns = ['get', 'set', 'add', 'del', 'put', 'pop', 'run', 'init', 'read', 'write', 'open', 'close', 'find', 'sort', 'load', 'save', 'send', 'recv', 'push', 'pull', 'map', 'filter', 'parse', 'check', 'update', 'reset', 'clear', 'copy', 'move', 'swap'];
+  const props = ['id', 'len', 'key', 'val', 'pos', 'size', 'next', 'prev', 'head', 'tail', 'name', 'type', 'flag', 'count', 'index', 'state'];
+  const types = ['Node', 'Item', 'List', 'Map', 'Set', 'Vec', 'Buf', 'Ctx', 'Ptr', 'Box'];
+  const strings = ['ok', 'err', 'nil', 'end', 'start', 'done', 'ready', 'busy', 'on', 'off'];
 
-  const lines = text.split('\n').filter(l => l.trim());
-  const codeLines: string[] = [];
-  let indent = 0;
-  let lastPattern = -1;
-
-  // Language syntax
   const py = language === 'python';
   const rb = language === 'ruby';
   const rs = language === 'rust';
   const go = language === 'go';
   const semi = (py || rb || go) ? '' : ';';
   const kw = py ? '' : rs ? 'let ' : go ? '' : 'const ';
+  const kwMut = py ? '' : rs ? 'let mut ' : go ? '' : 'let ';
 
-  // Short, varied code patterns (all under ~40 chars)
-  const patterns = [
-    // Simple assignments
-    (h: number) => `${kw}${pick(NAMES, h)} = ${num(h)}${semi}`,
-    (h: number) => `${pick(NAMES, h)} = ${pick(NAMES, h+1)}${semi}`,
-    (h: number) => `${pick(VARS, h)} = ${pick(VARS, h+1)} + ${num(h)}${semi}`,
-    (h: number) => `${pick(NAMES, h)} += ${num(h)}${semi}`,
-    (h: number) => `${pick(VARS, h)}++${semi}`,
+  const lines: string[] = [];
+  const textLines = text.split('\n').filter(l => l.trim());
 
-    // Function calls
-    (h: number) => `${pick(FUNCS, h)}()${semi}`,
-    (h: number) => `${pick(FUNCS, h)}(${pick(VARS, h)})${semi}`,
-    (h: number) => `${pick(FUNCS, h)}(${pick(NAMES, h)}, ${num(h)})${semi}`,
-    (h: number) => `${pick(NAMES, h)} = ${pick(FUNCS, h+1)}()${semi}`,
-    (h: number) => `${pick(VARS, h)} = ${pick(FUNCS, h)}(${pick(VARS, h+1)})${semi}`,
+  // Generate multiple code lines per text line for density
+  textLines.forEach(() => {
+    const baseIndent = rand() % 4; // 0-3 base indent
+    const ind = '  '.repeat(baseIndent);
 
-    // Property access
-    (h: number) => `${pick(NAMES, h)}.${pick(PROPS, h+1)} = ${num(h)}${semi}`,
-    (h: number) => `${pick(VARS, h)} = ${pick(NAMES, h)}.${pick(PROPS, h+1)}${semi}`,
-    (h: number) => `${pick(NAMES, h)}.${pick(FUNCS, h)}()${semi}`,
+    // Generate 1-3 lines per input line
+    const linesPerInput = 1 + (rand() % 3);
 
-    // Arrays/indexing
-    (h: number) => `${pick(NAMES, h)}[${pick(VARS, h)}] = ${num(h)}${semi}`,
-    (h: number) => `${pick(VARS, h)} = ${pick(NAMES, h)}[${num(h)}]${semi}`,
-    (h: number) => `${pick(NAMES, h)}.push(${pick(VARS, h)})${semi}`,
-    (h: number) => `${pick(VARS, h)} = ${pick(NAMES, h)}.pop()${semi}`,
+    for (let li = 0; li < linesPerInput; li++) {
+      const extraIndent = chance(30) ? '  ' : '';
+      const prefix = ind + extraIndent;
 
-    // Conditionals (open block)
-    (h: number) => { indent++; return py ? `if ${pick(NAMES, h)}:` : `if (${pick(NAMES, h)}) {`; },
-    (h: number) => { indent++; return py ? `if ${pick(VARS, h)} > ${num(h)}:` : `if (${pick(VARS, h)} > ${num(h)}) {`; },
-    (h: number) => { indent++; return py ? `while ${pick(VARS, h)} < ${num(h)}:` : `while (${pick(VARS, h)} < ${num(h)}) {`; },
-    (h: number) => { indent++; return py ? `for ${pick(VARS, h)} in ${pick(NAMES, h)}:` : `for (${pick(VARS, h)} of ${pick(NAMES, h)}) {`; },
+      // Pick a random pattern type
+      const patternType = rand() % 25;
 
-    // Returns
-    (h: number) => `return ${pick(NAMES, h)}${semi}`,
-    (h: number) => `return ${pick(VARS, h)}${semi}`,
-    (h: number) => `return ${num(h)}${semi}`,
-    (_h: number) => `return true${semi}`,
-    (_h: number) => `return false${semi}`,
+      let line = '';
+      switch (patternType) {
+        case 0: line = `${kw}${pick(names)} = ${num()}${semi}`; break;
+        case 1: line = `${pick(names)} = ${pick(names)}${semi}`; break;
+        case 2: line = `${pick(v1)} = ${pick(v1)} + ${small()}${semi}`; break;
+        case 3: line = `${pick(v1)}++${semi}`; break;
+        case 4: line = `${pick(fns)}()${semi}`; break;
+        case 5: line = `${pick(fns)}(${pick(v1)})${semi}`; break;
+        case 6: line = `${pick(fns)}(${pick(names)}, ${small()})${semi}`; break;
+        case 7: line = `${pick(names)} = ${pick(fns)}()${semi}`; break;
+        case 8: line = `${pick(v1)} = ${pick(fns)}(${pick(v2)})${semi}`; break;
+        case 9: line = `${pick(names)}.${pick(props)} = ${small()}${semi}`; break;
+        case 10: line = `${pick(v1)} = ${pick(names)}.${pick(props)}${semi}`; break;
+        case 11: line = `${pick(names)}.${pick(fns)}()${semi}`; break;
+        case 12: line = `${pick(names)}[${pick(v1)}] = ${small()}${semi}`; break;
+        case 13: line = `${pick(v1)} = ${pick(names)}[${small()}]${semi}`; break;
+        case 14: line = `return ${pick(names)}${semi}`; break;
+        case 15: line = `return ${pick(v1)}${semi}`; break;
+        case 16: line = `return ${small()}${semi}`; break;
+        case 17: line = `${pick(names)} = true${semi}`; break;
+        case 18: line = `${pick(names)} = false${semi}`; break;
+        case 19: line = `${pick(v1)} = ${pick(v2)} * ${pick(v1)}${semi}`; break;
+        case 20: line = `${kwMut}${pick(names)} = []${semi}`; break;
+        case 21: line = `${kw}${pick(names)} = {}${semi}`; break;
+        case 22: line = `${pick(names)} = "${pick(strings)}"${semi}`; break;
+        case 23: line = go ? `${pick(names)} := ${pick(types)}{}` : rs ? `let ${pick(names)} = ${pick(types)}::new()${semi}` : `${kw}${pick(names)} = new ${pick(types)}()${semi}`; break;
+        case 24: line = `${pick(names)}.${pick(fns)}(${pick(v1)}, ${pick(v2)})${semi}`; break;
+      }
 
-    // Boolean/null
-    (h: number) => `${pick(NAMES, h)} = true${semi}`,
-    (h: number) => `${pick(NAMES, h)} = false${semi}`,
-    (h: number) => `${pick(NAMES, h)} = null${semi}`,
-
-    // Short expressions
-    (h: number) => `${pick(VARS, h)} = ${pick(VARS, h+1)} * ${pick(VARS, h+2)}${semi}`,
-    (h: number) => `${pick(VARS, h)} = ${pick(VARS, h+1)} % ${num(h)}${semi}`,
-    (h: number) => `${pick(NAMES, h)} = !${pick(NAMES, h+1)}${semi}`,
-
-    // Type/new
-    (h: number) => go ? `${pick(NAMES, h)} := ${pick(TYPES, h)}{}` : rs ? `let ${pick(NAMES, h)} = ${pick(TYPES, h)}::new()${semi}` : `${kw}${pick(NAMES, h)} = new ${pick(TYPES, h)}()${semi}`,
-    (h: number) => `${pick(NAMES, h)} = []${semi}`,
-    (h: number) => `${pick(NAMES, h)} = {}${semi}`,
-
-    // String assignments
-    (h: number) => `${pick(NAMES, h)} = "ok"${semi}`,
-    (h: number) => `${pick(NAMES, h)} = ""${semi}`,
-    (h: number) => `${pick(VARS, h)} = "."${semi}`,
-  ];
-
-  lines.forEach((line, lineIdx) => {
-    const h = hash(line, lineIdx);
-
-    // Close blocks sometimes
-    if (indent > 0 && h % 3 === 0) {
-      indent--;
-      if (!py && !rb) codeLines.push('  '.repeat(indent) + '}');
+      lines.push(prefix + line);
     }
 
-    // Pick pattern (avoid same pattern twice)
-    let patternIdx = h % patterns.length;
-    if (patternIdx === lastPattern) {
-      patternIdx = (patternIdx + 1) % patterns.length;
+    // Occasionally add block structures
+    if (chance(15)) {
+      const blockInd = '  '.repeat(rand() % 3);
+      if (py) {
+        lines.push(`${blockInd}if ${pick(names)}:`);
+        lines.push(`${blockInd}  ${pick(names)} = ${small()}${semi}`);
+      } else {
+        lines.push(`${blockInd}if (${pick(names)}) {`);
+        lines.push(`${blockInd}  ${pick(names)} = ${small()}${semi}`);
+        lines.push(`${blockInd}}`);
+      }
     }
-    lastPattern = patternIdx;
 
-    const pattern = patterns[patternIdx]!;
-    const codeLine = pattern(h);
-
-    // Add with proper indent (indent BEFORE line for block openers)
-    const currentIndent = codeLine.endsWith('{') || codeLine.endsWith(':')
-      ? Math.max(0, indent - 1)
-      : indent;
-    codeLines.push('  '.repeat(currentIndent) + codeLine);
-
-    // Occasional blank line
-    if (h % 5 === 0) codeLines.push('');
+    // Rare blank line (only 8% chance)
+    if (chance(8)) lines.push('');
   });
 
-  // Close remaining blocks
-  while (indent > 0) {
-    indent--;
-    if (!py && !rb) codeLines.push('  '.repeat(indent) + '}');
-  }
-
-  return codeLines.join('\n');
+  return lines.join('\n');
 }
