@@ -17,118 +17,87 @@ export interface Theme {
 
 export const MATRIX_THEME: Theme = {
   name: 'matrix-green',
-  background: '#0D1117',           // GitHub dark background
-  textColor: '#C9D1D9',            // Light gray text
-  keyword: '#FF7B72',              // Red-orange keywords
-  string: '#A5D6FF',               // Light blue strings
-  number: '#79C0FF',               // Blue numbers
-  comment: '#8B949E',              // Gray comments
+  background: '#0D1117',
+  textColor: '#C9D1D9',
+  keyword: '#FF7B72',
+  string: '#A5D6FF',
+  number: '#79C0FF',
+  comment: '#8B949E',
 };
 
-/**
- * Keywords for syntax highlighting
- */
 const KEYWORDS: Record<CodeLanguage, string[]> = {
-  javascript: ['const', 'let', 'var', 'function', 'class', 'return', 'if', 'else', 'for', 'while', 'new', 'this', 'async', 'await', 'export', 'import', 'from', 'try', 'catch', 'throw'],
-  python: ['def', 'class', 'return', 'if', 'else', 'elif', 'for', 'while', 'import', 'from', 'self', 'True', 'False', 'None', 'async', 'await', 'try', 'except', 'with', 'as'],
-  rust: ['let', 'mut', 'fn', 'impl', 'struct', 'enum', 'pub', 'use', 'return', 'if', 'else', 'for', 'while', 'match', 'Some', 'None', 'Ok', 'Err', 'async', 'await'],
-  go: ['func', 'var', 'const', 'type', 'struct', 'interface', 'return', 'if', 'else', 'for', 'range', 'package', 'import', 'defer', 'go', 'chan', 'select', 'case'],
-  cpp: ['auto', 'class', 'public', 'private', 'protected', 'return', 'if', 'else', 'for', 'while', 'namespace', 'using', 'template', 'typename', 'virtual', 'override', 'const', 'static'],
-  ruby: ['def', 'class', 'end', 'return', 'if', 'else', 'elsif', 'for', 'while', 'do', 'begin', 'rescue', 'ensure', 'module', 'attr_accessor', 'require', 'include'],
-  java: ['public', 'private', 'protected', 'class', 'void', 'int', 'String', 'return', 'if', 'else', 'for', 'while', 'new', 'static', 'final', 'extends', 'implements', 'try', 'catch'],
+  javascript: ['const', 'let', 'var', 'function', 'class', 'return', 'if', 'else', 'for', 'while', 'new', 'this', 'async', 'await', 'export', 'import', 'from', 'try', 'catch', 'throw', 'true', 'false', 'null'],
+  python: ['def', 'class', 'return', 'if', 'else', 'elif', 'for', 'while', 'import', 'from', 'self', 'True', 'False', 'None', 'async', 'await', 'try', 'except', 'with', 'as', 'and', 'or', 'not'],
+  rust: ['let', 'mut', 'fn', 'impl', 'struct', 'enum', 'pub', 'use', 'return', 'if', 'else', 'for', 'while', 'match', 'Some', 'None', 'Ok', 'Err', 'async', 'await', 'true', 'false'],
+  go: ['func', 'var', 'const', 'type', 'struct', 'interface', 'return', 'if', 'else', 'for', 'range', 'package', 'import', 'defer', 'go', 'chan', 'select', 'case', 'nil', 'true', 'false'],
+  cpp: ['auto', 'class', 'public', 'private', 'protected', 'return', 'if', 'else', 'for', 'while', 'namespace', 'using', 'template', 'typename', 'virtual', 'override', 'const', 'static', 'true', 'false', 'nullptr'],
+  ruby: ['def', 'class', 'end', 'return', 'if', 'else', 'elsif', 'for', 'while', 'do', 'begin', 'rescue', 'ensure', 'module', 'attr_accessor', 'require', 'include', 'true', 'false', 'nil'],
+  java: ['public', 'private', 'protected', 'class', 'void', 'int', 'String', 'return', 'if', 'else', 'for', 'while', 'new', 'static', 'final', 'extends', 'implements', 'try', 'catch', 'true', 'false', 'null'],
 };
 
-/**
- * Apply syntax highlighting to code text
- */
 export function highlightCode(code: string, language: CodeLanguage, theme: Theme): string {
   let highlighted = code;
 
-  // Escape HTML
   highlighted = highlighted
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  // Store protected regions with placeholders
   const protectedRegions: string[] = [];
   let placeholderIndex = 0;
 
-  // Protect comments FIRST
-  highlighted = highlighted.replace(/\/\/(.*?)$/gm, (match) => {
-    const placeholder = `__PROTECTED_${placeholderIndex}__`;
-    protectedRegions[placeholderIndex] = `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`;
-    placeholderIndex++;
-    return placeholder;
-  });
-  highlighted = highlighted.replace(/#(.*?)$/gm, (match) => {
-    const placeholder = `__PROTECTED_${placeholderIndex}__`;
-    protectedRegions[placeholderIndex] = `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`;
-    placeholderIndex++;
-    return placeholder;
-  });
-
   // Protect strings
   highlighted = highlighted.replace(/"([^"]*)"/g, (_match, content) => {
-    const placeholder = `__PROTECTED_${placeholderIndex}__`;
+    const placeholder = `__P${placeholderIndex}__`;
     protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">"${content}"</span>`;
     placeholderIndex++;
     return placeholder;
   });
   highlighted = highlighted.replace(/'([^']*)'/g, (_match, content) => {
-    const placeholder = `__PROTECTED_${placeholderIndex}__`;
+    const placeholder = `__P${placeholderIndex}__`;
     protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">'${content}'</span>`;
-    placeholderIndex++;
-    return placeholder;
-  });
-  // Template literals
-  highlighted = highlighted.replace(/`([^`]*)`/g, (_match, content) => {
-    const placeholder = `__PROTECTED_${placeholderIndex}__`;
-    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">\`${content}\`</span>`;
     placeholderIndex++;
     return placeholder;
   });
 
   // Highlight numbers
-  highlighted = highlighted.replace(/\b(\d+\.?\d*)\b/g, `<span style="color: ${theme.number};">$1</span>`);
+  highlighted = highlighted.replace(/\b(\d+)\b/g, `<span style="color: ${theme.number};">$1</span>`);
 
   // Highlight keywords
   const keywords = KEYWORDS[language] || [];
   keywords.forEach(keyword => {
-    const regex = new RegExp(`\\b(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'g');
-    highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword}; font-weight: 600;">$1</span>`);
+    const regex = new RegExp(`\\b(${keyword})\\b`, 'g');
+    highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword};">$1</span>`);
   });
 
-  // Highlight function calls - cyan
-  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, `<span style="color: #79C0FF;">$1</span>(`);
+  // Function calls - cyan
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\(/g, `<span style="color: #79C0FF;">$1</span>(`);
 
-  // Highlight property access - light purple
+  // Property access - purple
   highlighted = highlighted.replace(/\.([a-zA-Z_][a-zA-Z0-9_]*)/g, `.<span style="color: #D2A8FF;">$1</span>`);
 
-  // Highlight operators
-  highlighted = highlighted.replace(/([+\-*/%<>!&|=]+)/g, `<span style="color: #FF7B72;">$1</span>`);
+  // Operators
+  highlighted = highlighted.replace(/([=!<>+\-*/%&|]+)/g, `<span style="color: #FF7B72;">$1</span>`);
 
-  // Highlight brackets/braces - yellow
+  // Brackets - orange
   highlighted = highlighted.replace(/([{}[\]()])/g, `<span style="color: #FFA657;">$1</span>`);
 
-  // Restore protected regions
+  // Restore protected
   protectedRegions.forEach((region, index) => {
-    highlighted = highlighted.replace(`__PROTECTED_${index}__`, region);
+    highlighted = highlighted.replace(`__P${index}__`, region);
   });
 
   return highlighted;
 }
 
 /**
- * Transform plain text into realistic-looking code
- * Creates structured code blocks with proper indentation
+ * Transform plain text into realistic short code lines
  */
 export function textToCode(text: string, language: CodeLanguage): string {
   if (!text.trim()) {
-    return '// Waiting for input...';
+    return 'loading...';
   }
 
-  // Hash function for deterministic randomness
   const hash = (str: string, seed = 0): number => {
     let h = seed;
     for (let i = 0; i < str.length; i++) {
@@ -138,190 +107,123 @@ export function textToCode(text: string, language: CodeLanguage): string {
     return Math.abs(h);
   };
 
-  // Convert text to camelCase variable name
-  const toCamelCase = (str: string): string => {
-    const words = str.toLowerCase().split(/\s+/).filter(w => w.length > 0).slice(0, 3);
-    if (words.length === 0) return 'data';
-    return words.map((w, i) => i === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1)).join('').replace(/[^a-zA-Z0-9]/g, '');
-  };
-
-  // Variable and function name pools
-  const VARS = ['data', 'result', 'value', 'config', 'state', 'response', 'payload', 'context', 'handler', 'callback'];
-  const FUNCS = ['process', 'handle', 'update', 'fetch', 'render', 'validate', 'transform', 'execute', 'initialize', 'compute'];
-  const TYPES = ['User', 'Item', 'Config', 'Response', 'Request', 'Handler', 'Service', 'Controller', 'Manager', 'Factory'];
-  const PROPS = ['id', 'name', 'type', 'status', 'count', 'value', 'enabled', 'active', 'timestamp', 'version'];
+  // Short variable names
+  const VARS = ['x', 'y', 'n', 'i', 'j', 'k', 'a', 'b', 'c', 'd', 'e', 'm', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w'];
+  const NAMES = ['data', 'item', 'node', 'val', 'key', 'idx', 'len', 'cnt', 'sum', 'max', 'min', 'tmp', 'res', 'out', 'buf', 'ptr', 'obj', 'arr', 'str', 'num'];
+  const FUNCS = ['get', 'set', 'add', 'del', 'put', 'pop', 'run', 'init', 'load', 'save', 'read', 'send', 'recv', 'open', 'close', 'find', 'sort', 'push', 'pull', 'sync'];
+  const PROPS = ['id', 'len', 'key', 'val', 'pos', 'size', 'next', 'prev', 'left', 'right', 'head', 'tail', 'root', 'name', 'type', 'flag'];
+  const TYPES = ['Node', 'Item', 'List', 'Map', 'Set', 'Vec', 'Buf', 'Ctx', 'Req', 'Res'];
 
   const pick = <T>(arr: T[], seed: number): T => arr[seed % arr.length]!;
+  const num = (seed: number) => (seed % 99) + 1;
 
   const lines = text.split('\n').filter(l => l.trim());
   const codeLines: string[] = [];
-  let currentIndent = 0;
-  let inBlock = false;
-  let blockDepth = 0;
+  let indent = 0;
+  let lastPattern = -1;
 
-  // Language-specific syntax helpers
-  const syntax = {
-    varKeyword: language === 'python' ? '' : language === 'rust' ? 'let ' : language === 'go' ? '' : 'const ',
-    funcKeyword: language === 'python' ? 'def' : language === 'rust' ? 'fn' : language === 'go' ? 'func' : language === 'java' ? 'public void' : 'function',
-    classKeyword: language === 'python' ? 'class' : language === 'rust' ? 'struct' : language === 'go' ? 'type' : 'class',
-    comment: language === 'python' || language === 'ruby' ? '#' : '//',
-    semi: language === 'python' || language === 'ruby' || language === 'go' ? '' : ';',
-    arrow: language === 'python' ? ':' : language === 'rust' ? ' ->' : language === 'go' ? '' : ' =>',
-    blockStart: language === 'python' ? ':' : ' {',
-    blockEnd: language === 'python' ? '' : '}',
-  };
+  // Language syntax
+  const py = language === 'python';
+  const rb = language === 'ruby';
+  const rs = language === 'rust';
+  const go = language === 'go';
+  const semi = (py || rb || go) ? '' : ';';
+  const kw = py ? '' : rs ? 'let ' : go ? '' : 'const ';
 
-  const indent = () => '  '.repeat(currentIndent);
+  // Short, varied code patterns (all under ~40 chars)
+  const patterns = [
+    // Simple assignments
+    (h: number) => `${kw}${pick(NAMES, h)} = ${num(h)}${semi}`,
+    (h: number) => `${pick(NAMES, h)} = ${pick(NAMES, h+1)}${semi}`,
+    (h: number) => `${pick(VARS, h)} = ${pick(VARS, h+1)} + ${num(h)}${semi}`,
+    (h: number) => `${pick(NAMES, h)} += ${num(h)}${semi}`,
+    (h: number) => `${pick(VARS, h)}++${semi}`,
 
-  // Code block generators
-  const generators = [
-    // Import/use statement
-    (text: string, idx: number) => {
-      const module = pick(TYPES, hash(text, idx)).toLowerCase();
-      if (language === 'python') return `from ${module} import ${pick(FUNCS, hash(text, idx + 1))}`;
-      if (language === 'rust') return `use crate::${module}::${pick(TYPES, hash(text, idx + 1))};`;
-      if (language === 'go') return `import "${module}"`;
-      if (language === 'java') return `import com.app.${module}.${pick(TYPES, hash(text, idx + 1))};`;
-      return `import { ${pick(FUNCS, hash(text, idx + 1))} } from './${module}'${syntax.semi}`;
-    },
+    // Function calls
+    (h: number) => `${pick(FUNCS, h)}()${semi}`,
+    (h: number) => `${pick(FUNCS, h)}(${pick(VARS, h)})${semi}`,
+    (h: number) => `${pick(FUNCS, h)}(${pick(NAMES, h)}, ${num(h)})${semi}`,
+    (h: number) => `${pick(NAMES, h)} = ${pick(FUNCS, h+1)}()${semi}`,
+    (h: number) => `${pick(VARS, h)} = ${pick(FUNCS, h)}(${pick(VARS, h+1)})${semi}`,
 
-    // Variable assignment with object
-    (text: string, idx: number) => {
-      const varName = toCamelCase(text) || pick(VARS, hash(text, idx));
-      const prop1 = pick(PROPS, hash(text, idx));
-      const prop2 = pick(PROPS, hash(text, idx + 1));
-      const val = hash(text, idx) % 100;
-      return `${syntax.varKeyword}${varName} = { ${prop1}: ${val}, ${prop2}: "${pick(VARS, hash(text, idx + 2))}" }${syntax.semi}`;
-    },
+    // Property access
+    (h: number) => `${pick(NAMES, h)}.${pick(PROPS, h+1)} = ${num(h)}${semi}`,
+    (h: number) => `${pick(VARS, h)} = ${pick(NAMES, h)}.${pick(PROPS, h+1)}${semi}`,
+    (h: number) => `${pick(NAMES, h)}.${pick(FUNCS, h)}()${semi}`,
 
-    // Function call with callback
-    (text: string, idx: number) => {
-      const func = pick(FUNCS, hash(text, idx));
-      const arg = pick(VARS, hash(text, idx + 1));
-      if (language === 'python') return `${func}(${arg}, lambda x: x.${pick(PROPS, hash(text, idx + 2))})`;
-      return `${func}(${arg}, (x)${syntax.arrow} x.${pick(PROPS, hash(text, idx + 2))})${syntax.semi}`;
-    },
+    // Arrays/indexing
+    (h: number) => `${pick(NAMES, h)}[${pick(VARS, h)}] = ${num(h)}${semi}`,
+    (h: number) => `${pick(VARS, h)} = ${pick(NAMES, h)}[${num(h)}]${semi}`,
+    (h: number) => `${pick(NAMES, h)}.push(${pick(VARS, h)})${semi}`,
+    (h: number) => `${pick(VARS, h)} = ${pick(NAMES, h)}.pop()${semi}`,
 
-    // Async function start (opens block)
-    (text: string, idx: number) => {
-      const funcName = pick(FUNCS, hash(text, idx)) + pick(TYPES, hash(text, idx + 1));
-      inBlock = true;
-      blockDepth++;
-      if (language === 'python') return `async def ${funcName}(${pick(VARS, hash(text, idx + 2))}):`;
-      if (language === 'rust') return `async fn ${funcName}(${pick(VARS, hash(text, idx + 2))}: &str) -> Result<()> {`;
-      if (language === 'go') return `func ${funcName}(${pick(VARS, hash(text, idx + 2))} string) error {`;
-      return `async ${syntax.funcKeyword} ${funcName}(${pick(VARS, hash(text, idx + 2))})${syntax.blockStart}`;
-    },
+    // Conditionals (open block)
+    (h: number) => { indent++; return py ? `if ${pick(NAMES, h)}:` : `if (${pick(NAMES, h)}) {`; },
+    (h: number) => { indent++; return py ? `if ${pick(VARS, h)} > ${num(h)}:` : `if (${pick(VARS, h)} > ${num(h)}) {`; },
+    (h: number) => { indent++; return py ? `while ${pick(VARS, h)} < ${num(h)}:` : `while (${pick(VARS, h)} < ${num(h)}) {`; },
+    (h: number) => { indent++; return py ? `for ${pick(VARS, h)} in ${pick(NAMES, h)}:` : `for (${pick(VARS, h)} of ${pick(NAMES, h)}) {`; },
 
-    // Method chain
-    (text: string, idx: number) => {
-      const base = pick(VARS, hash(text, idx));
-      const m1 = pick(FUNCS, hash(text, idx + 1));
-      const m2 = pick(FUNCS, hash(text, idx + 2));
-      const m3 = ['map', 'filter', 'reduce', 'find', 'forEach'][hash(text, idx + 3) % 5]!;
-      return `${base}.${m1}().${m2}().${m3}(item => item)${syntax.semi}`;
-    },
+    // Returns
+    (h: number) => `return ${pick(NAMES, h)}${semi}`,
+    (h: number) => `return ${pick(VARS, h)}${semi}`,
+    (h: number) => `return ${num(h)}${semi}`,
+    (_h: number) => `return true${semi}`,
+    (_h: number) => `return false${semi}`,
 
-    // Try-catch/error handling
-    (text: string, idx: number) => {
-      const varName = pick(VARS, hash(text, idx));
-      if (language === 'python') return `try:\n${indent()}    ${varName} = await ${pick(FUNCS, hash(text, idx + 1))}()`;
-      if (language === 'rust') return `let ${varName} = ${pick(FUNCS, hash(text, idx + 1))}().await?;`;
-      if (language === 'go') return `${varName}, err := ${pick(FUNCS, hash(text, idx + 1))}()`;
-      return `const ${varName} = await ${pick(FUNCS, hash(text, idx + 1))}()${syntax.semi}`;
-    },
+    // Boolean/null
+    (h: number) => `${pick(NAMES, h)} = true${semi}`,
+    (h: number) => `${pick(NAMES, h)} = false${semi}`,
+    (h: number) => `${pick(NAMES, h)} = null${semi}`,
 
-    // Conditional with body
-    (text: string, idx: number) => {
-      const varName = pick(VARS, hash(text, idx));
-      const prop = pick(PROPS, hash(text, idx + 1));
-      const op = ['===', '!==', '>', '<', '>='][hash(text, idx + 2) % 5]!;
-      const val = hash(text, idx + 3) % 50;
-      inBlock = true;
-      blockDepth++;
-      if (language === 'python') return `if ${varName}.${prop} ${op.replace('===', '==')} ${val}:`;
-      return `if (${varName}.${prop} ${op} ${val})${syntax.blockStart}`;
-    },
+    // Short expressions
+    (h: number) => `${pick(VARS, h)} = ${pick(VARS, h+1)} * ${pick(VARS, h+2)}${semi}`,
+    (h: number) => `${pick(VARS, h)} = ${pick(VARS, h+1)} % ${num(h)}${semi}`,
+    (h: number) => `${pick(NAMES, h)} = !${pick(NAMES, h+1)}${semi}`,
 
-    // Return statement
-    (text: string, idx: number) => {
-      const varName = pick(VARS, hash(text, idx));
-      const prop = pick(PROPS, hash(text, idx + 1));
-      return `return ${varName}.${prop}${syntax.semi}`;
-    },
+    // Type/new
+    (h: number) => go ? `${pick(NAMES, h)} := ${pick(TYPES, h)}{}` : rs ? `let ${pick(NAMES, h)} = ${pick(TYPES, h)}::new()${semi}` : `${kw}${pick(NAMES, h)} = new ${pick(TYPES, h)}()${semi}`,
+    (h: number) => `${pick(NAMES, h)} = []${semi}`,
+    (h: number) => `${pick(NAMES, h)} = {}${semi}`,
 
-    // Comment with user's text
-    (text: string, _idx: number) => {
-      return `${syntax.comment} ${text}`;
-    },
-
-    // Array operation
-    (text: string, idx: number) => {
-      const arr = pick(VARS, hash(text, idx)) + 's';
-      const method = ['map', 'filter', 'reduce', 'find', 'every', 'some'][hash(text, idx + 1) % 6]!;
-      const prop = pick(PROPS, hash(text, idx + 2));
-      if (language === 'python') return `${arr} = [x.${prop} for x in ${pick(VARS, hash(text, idx + 3))}]`;
-      return `${syntax.varKeyword}${arr} = ${pick(VARS, hash(text, idx + 3))}.${method}(x => x.${prop})${syntax.semi}`;
-    },
-
-    // Object destructuring
-    (text: string, idx: number) => {
-      const p1 = pick(PROPS, hash(text, idx));
-      const p2 = pick(PROPS, hash(text, idx + 1));
-      const source = pick(VARS, hash(text, idx + 2));
-      if (language === 'python') return `${p1}, ${p2} = ${source}.${p1}, ${source}.${p2}`;
-      if (language === 'rust') return `let ${pick(TYPES, hash(text, idx))} { ${p1}, ${p2}, .. } = ${source};`;
-      if (language === 'go') return `${p1}, ${p2} := ${source}.${pick(FUNCS, hash(text, idx + 3))}()`;
-      return `const { ${p1}, ${p2} } = ${source}${syntax.semi}`;
-    },
-
-    // Class/struct property
-    (text: string, idx: number) => {
-      const prop = pick(PROPS, hash(text, idx));
-      const type = pick(TYPES, hash(text, idx + 1));
-      if (language === 'python') return `self.${prop} = ${pick(VARS, hash(text, idx + 2))}`;
-      if (language === 'rust') return `${prop}: ${type},`;
-      if (language === 'java') return `private ${type} ${prop};`;
-      return `this.${prop} = ${pick(VARS, hash(text, idx + 2))}${syntax.semi}`;
-    },
+    // String assignments
+    (h: number) => `${pick(NAMES, h)} = "ok"${semi}`,
+    (h: number) => `${pick(NAMES, h)} = ""${semi}`,
+    (h: number) => `${pick(VARS, h)} = "."${semi}`,
   ];
 
-  lines.forEach((line, idx) => {
-    // Occasionally close a block
-    if (inBlock && blockDepth > 0 && hash(line, idx) % 4 === 0) {
-      currentIndent = Math.max(0, currentIndent - 1);
-      if (syntax.blockEnd) {
-        codeLines.push(`${indent()}${syntax.blockEnd}`);
-      }
-      blockDepth--;
-      if (blockDepth === 0) inBlock = false;
+  lines.forEach((line, lineIdx) => {
+    const h = hash(line, lineIdx);
+
+    // Close blocks sometimes
+    if (indent > 0 && h % 3 === 0) {
+      indent--;
+      if (!py && !rb) codeLines.push('  '.repeat(indent) + '}');
     }
 
-    // Select generator based on content hash
-    const genIdx = hash(line, idx) % generators.length;
-    const generator = generators[genIdx]!;
-    const codeLine = generator(line, idx);
-
-    codeLines.push(`${indent()}${codeLine}`);
-
-    // Increase indent after opening a block
-    if (inBlock && codeLine.endsWith(syntax.blockStart)) {
-      currentIndent++;
+    // Pick pattern (avoid same pattern twice)
+    let patternIdx = h % patterns.length;
+    if (patternIdx === lastPattern) {
+      patternIdx = (patternIdx + 1) % patterns.length;
     }
+    lastPattern = patternIdx;
 
-    // Add blank line occasionally for readability
-    if (hash(line, idx + 100) % 4 === 0) {
-      codeLines.push('');
-    }
+    const pattern = patterns[patternIdx]!;
+    const codeLine = pattern(h);
+
+    // Add with proper indent (indent BEFORE line for block openers)
+    const currentIndent = codeLine.endsWith('{') || codeLine.endsWith(':')
+      ? Math.max(0, indent - 1)
+      : indent;
+    codeLines.push('  '.repeat(currentIndent) + codeLine);
+
+    // Occasional blank line
+    if (h % 5 === 0) codeLines.push('');
   });
 
-  // Close any remaining blocks
-  while (blockDepth > 0) {
-    currentIndent = Math.max(0, currentIndent - 1);
-    if (syntax.blockEnd) {
-      codeLines.push(`${indent()}${syntax.blockEnd}`);
-    }
-    blockDepth--;
+  // Close remaining blocks
+  while (indent > 0) {
+    indent--;
+    if (!py && !rb) codeLines.push('  '.repeat(indent) + '}');
   }
 
   return codeLines.join('\n');
