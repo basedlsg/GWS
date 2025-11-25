@@ -21,15 +21,23 @@ export function TransmutePage() {
   const saveStatusTimeoutRef = useRef<NodeJS.Timeout>();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const codePreviewRef = useRef<HTMLDivElement>(null);
 
   // Detect double-enter for immediate transformation
   const lastCharRef = useRef('');
 
-  // Sync scroll positions between overlay and textarea
+  // Sync scroll positions between overlay and textarea, and auto-scroll right panel
   const handleScroll = useCallback(() => {
     if (overlayRef.current && textareaRef.current) {
       overlayRef.current.scrollTop = textareaRef.current.scrollTop;
       overlayRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    }
+    // Sync right panel scroll proportionally
+    if (codePreviewRef.current && textareaRef.current) {
+      const textarea = textareaRef.current;
+      const codePreview = codePreviewRef.current;
+      const scrollRatio = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight || 1);
+      codePreview.scrollTop = scrollRatio * (codePreview.scrollHeight - codePreview.clientHeight);
     }
   }, []);
 
@@ -104,6 +112,13 @@ export function TransmutePage() {
     };
   }, [saveToLocalStorage]);
 
+  // Auto-scroll right panel to bottom when code updates
+  useEffect(() => {
+    if (codePreviewRef.current) {
+      codePreviewRef.current.scrollTop = codePreviewRef.current.scrollHeight;
+    }
+  }, [codeHistory]);
+
   // Auto-transform after 2.5 seconds of no typing
   useEffect(() => {
     if (timeoutRef.current) {
@@ -162,35 +177,9 @@ export function TransmutePage() {
     return tokens.map((token, index) => {
       if (!token) return '';
 
-      // Handle whitespace - double newlines get filler content 60% of the time
+      // Handle whitespace - keep exact alignment with textarea for cursor sync
       if (/^\s+$/.test(token)) {
-        let result = token;
-
-        // For double+ newlines, add filler content
-        result = result.replace(/\n\n+/g, () => {
-          const seed = hashString(token + index + Math.random().toString());
-          // 40% blank, 60% filler
-          if (seed % 100 < 40) {
-            return '\n';
-          }
-          // Random filler snippets that look like code
-          const fillers = [
-            '};', '});', ']);', '*/','---', '...',
-            '// ...', '/* */', '{ }', '[ ]',
-            '} else {', '});', 'break;', 'continue;',
-            '};', '}}', '));', '> {', '=> {',
-            '| |', '&&', '||', '??', '::',
-            '++;', '--;', '+=', '-=', '*=',
-            '...args', '...props', '=> {}', '() => {}',
-          ];
-          const filler = fillers[seed % fillers.length];
-          const fillerColor = COLORS.neutral[seed % COLORS.neutral.length];
-          return `\n<span style="color: ${fillerColor};">${filler}</span>\n`;
-        });
-
-        result = result.replace(/ /g, '&nbsp;');
-        result = result.replace(/\n/g, '<br/>');
-        return result;
+        return token.replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>');
       }
 
       // Handle punctuation - muted colors
@@ -352,7 +341,7 @@ export function TransmutePage() {
                 {language.charAt(0).toUpperCase() + language.slice(1)}
               </h2>
             </div>
-            <div className="flex-1 overflow-auto">
+            <div ref={codePreviewRef} className="flex-1 overflow-auto">
               <div className="flex min-h-full">
                 {/* Line numbers */}
                 <div
