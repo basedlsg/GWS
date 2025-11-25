@@ -162,11 +162,14 @@ export function TransmutePage() {
     return tokens.map((token, index) => {
       if (!token) return '';
 
-      // Handle whitespace - collapse double newlines to reduce gaps
+      // Handle whitespace - double newlines get 1.5x spacing
       if (/^\s+$/.test(token)) {
-        // Replace double+ newlines with single newline (halves the gap)
-        const collapsed = token.replace(/\n\n+/g, '\n');
-        return collapsed.replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>');
+        // Replace double+ newlines with 1.5x spacing (br + half-height spacer)
+        let result = token;
+        result = result.replace(/\n\n+/g, '\n<span style="display:block;height:0.75em;"></span>');
+        result = result.replace(/ /g, '&nbsp;');
+        result = result.replace(/\n/g, '<br/>');
+        return result;
       }
 
       // Handle punctuation - muted colors
