@@ -162,11 +162,32 @@ export function TransmutePage() {
     return tokens.map((token, index) => {
       if (!token) return '';
 
-      // Handle whitespace - double newlines get 1.5x spacing
+      // Handle whitespace - double newlines get filler content 60% of the time
       if (/^\s+$/.test(token)) {
-        // Replace double+ newlines with 1.5x spacing (br + half-height spacer)
         let result = token;
-        result = result.replace(/\n\n+/g, '\n<span style="display:block;height:0.75em;"></span>');
+
+        // For double+ newlines, add filler content
+        result = result.replace(/\n\n+/g, () => {
+          const seed = hashString(token + index + Math.random().toString());
+          // 40% blank, 60% filler
+          if (seed % 100 < 40) {
+            return '\n';
+          }
+          // Random filler snippets that look like code
+          const fillers = [
+            '};', '});', ']);', '*/','---', '...',
+            '// ...', '/* */', '{ }', '[ ]',
+            '} else {', '});', 'break;', 'continue;',
+            '};', '}}', '));', '> {', '=> {',
+            '| |', '&&', '||', '??', '::',
+            '++;', '--;', '+=', '-=', '*=',
+            '...args', '...props', '=> {}', '() => {}',
+          ];
+          const filler = fillers[seed % fillers.length];
+          const fillerColor = COLORS.neutral[seed % COLORS.neutral.length];
+          return `\n<span style="color: ${fillerColor};">${filler}</span>\n`;
+        });
+
         result = result.replace(/ /g, '&nbsp;');
         result = result.replace(/\n/g, '<br/>');
         return result;
