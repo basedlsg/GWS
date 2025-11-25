@@ -104,7 +104,7 @@ export function TransmutePage() {
     };
   }, [saveToLocalStorage]);
 
-  // Auto-transform after 5 seconds of no typing
+  // Auto-transform after 2.5 seconds of no typing
   useEffect(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -112,7 +112,7 @@ export function TransmutePage() {
 
     timeoutRef.current = setTimeout(() => {
       triggerTransformation();
-    }, 5000);
+    }, 2500); // 2.5 second delay for natural feel
 
     return () => {
       if (timeoutRef.current) {
@@ -133,51 +133,70 @@ export function TransmutePage() {
     lastCharRef.current = lastTwo;
   }, [triggerTransformation]);
 
-  // Generate stable colored version of text for left side (with variety)
+  // Generate stable colored version of text for left side (realistic syntax highlighting feel)
   const coloredText = useMemo(() => {
     if (!text) return '';
 
-    // Base colors (cyan/teal) + jarring colors for variety
-    const BASE_COLORS = ['#00FFAA', '#00DDCC', '#00CCDD']; // Shades of cyan/teal
-    const MAGENTA = '#FF00FF';
-    const YELLOW = '#FFFF00';
+    // Syntax-highlighting inspired palette (like popular code themes)
+    const COLORS = {
+      keyword: ['#FF79C6', '#BD93F9', '#8BE9FD'],      // Pink, Purple, Cyan (keywords/built-ins)
+      identifier: ['#50FA7B', '#F1FA8C', '#FFB86C'],   // Green, Yellow, Orange (variables/functions)
+      string: ['#F1FA8C', '#FFB86C'],                   // Yellow, Orange (string-like)
+      special: ['#FF5555', '#FF79C6'],                  // Red, Pink (special/important)
+      neutral: ['#6272A4', '#44475A'],                  // Muted blue-gray (comments/punctuation)
+    };
 
     // Simple hash function for deterministic color selection
     const hashString = (str: string): number => {
       let hash = 0;
       for (let i = 0; i < str.length; i++) {
         hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash = hash & hash; // Convert to 32bit integer
+        hash = hash & hash;
       }
       return Math.abs(hash);
     };
 
-    // Use word position to determine color deterministically
-    const words = text.split(/(\s+)/);
+    // Split by words AND punctuation to color them separately
+    const tokens = text.split(/(\s+|[.,!?;:()[\]{}'"<>])/);
 
-    return words.map((word, index) => {
-      if (word.trim()) {
-        // Use hash of word + position for stable color selection
-        const seed = hashString(word + index);
-        const rand = seed % 100;
-        let color: string;
+    return tokens.map((token, index) => {
+      if (!token) return '';
 
-        if (rand < 2) {
-          // 2% chance: yellow (very rare, eye-catching)
-          color = YELLOW;
-        } else if (rand < 32) {
-          // 30% chance: magenta (jarring contrast)
-          color = MAGENTA;
-        } else {
-          // 68% chance: one of the base cyan/teal colors
-          const colorIndex = seed % BASE_COLORS.length;
-          color = BASE_COLORS[colorIndex]!;
-        }
-
-        const escapedWord = word.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br/>');
-        return `<span style="color: ${color}; transition: color 0.3s ease-in-out;">${escapedWord}</span>`;
+      // Handle whitespace
+      if (/^\s+$/.test(token)) {
+        return token.replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>');
       }
-      return word.replace(/ /g, '&nbsp;').replace(/\n/g, '<br/>');
+
+      // Handle punctuation - muted colors
+      if (/^[.,!?;:()[\]{}'"<>]$/.test(token)) {
+        const color = COLORS.neutral[hashString(token + index) % COLORS.neutral.length]!;
+        return `<span style="color: ${color};">${token}</span>`;
+      }
+
+      // Handle words - choose color category based on word characteristics
+      const seed = hashString(token + index);
+      const wordLength = token.length;
+      let color: string;
+
+      if (wordLength <= 3) {
+        // Short words look like keywords
+        color = COLORS.keyword[seed % COLORS.keyword.length]!;
+      } else if (wordLength <= 6) {
+        // Medium words - mix of keyword and identifier
+        const pool = [...COLORS.keyword, ...COLORS.identifier];
+        color = pool[seed % pool.length]!;
+      } else {
+        // Longer words look like identifiers/variables
+        color = COLORS.identifier[seed % COLORS.identifier.length]!;
+      }
+
+      // 8% chance to make it "special" (red/pink) for visual interest
+      if (seed % 100 < 8) {
+        color = COLORS.special[seed % COLORS.special.length]!;
+      }
+
+      const escapedToken = token.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return `<span style="color: ${color};">${escapedToken}</span>`;
     }).join('');
   }, [text]);
 
@@ -239,7 +258,7 @@ export function TransmutePage() {
           )}
           {text !== transformedText && (
             <div className="text-xs text-yellow-500 animate-pulse">
-              Transform pending... (Press Enter twice or wait 5s)
+              Transform pending... (Enter twice or wait 2.5s)
             </div>
           )}
           <div className="text-xs text-muted-foreground">
@@ -302,22 +321,41 @@ export function TransmutePage() {
               color: MATRIX_THEME.textColor,
             }}
           >
-            <div className="p-4 border-b" style={{ borderColor: '#003300' }}>
+            <div className="p-4 border-b" style={{ borderColor: '#21262d' }}>
               <h2 className="text-lg font-semibold" style={{ color: MATRIX_THEME.textColor }}>
-                Code Preview
+                {language.charAt(0).toUpperCase() + language.slice(1)}
               </h2>
             </div>
-            <div className="flex-1 overflow-auto p-4">
-              <pre
-                className="font-mono text-sm m-0"
-                dangerouslySetInnerHTML={{ __html: highlightedCode }}
-                style={{
-                  fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, monospace',
-                  transition: 'all 0.6s ease-in-out',
-                  opacity: highlightedCode ? 1 : 0.5,
-                  lineHeight: '1.5',
-                }}
-              />
+            <div className="flex-1 overflow-auto">
+              <div className="flex min-h-full">
+                {/* Line numbers */}
+                <div
+                  className="select-none text-right pr-4 py-4 pl-2"
+                  style={{
+                    color: '#484f58',
+                    backgroundColor: '#161b22',
+                    fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, monospace',
+                    fontSize: '0.875rem',
+                    lineHeight: '1.5',
+                    minWidth: '3rem',
+                  }}
+                >
+                  {(codeText || '// Start typing...').split('\n').map((_, i) => (
+                    <div key={i}>{i + 1}</div>
+                  ))}
+                </div>
+                {/* Code content */}
+                <pre
+                  className="font-mono text-sm m-0 flex-1 py-4 pr-4"
+                  dangerouslySetInnerHTML={{ __html: highlightedCode || '<span style="color: #8B949E;">// Start typing...</span>' }}
+                  style={{
+                    fontFamily: 'ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Monaco, monospace',
+                    transition: 'opacity 0.3s ease-in-out',
+                    opacity: highlightedCode ? 1 : 0.5,
+                    lineHeight: '1.5',
+                  }}
+                />
+              </div>
             </div>
           </Card>
         </Split>

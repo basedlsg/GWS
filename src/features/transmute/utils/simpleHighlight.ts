@@ -1,6 +1,6 @@
 /**
- * Simple Syntax Highlighter with Randomization
- * Creates beautiful, varied code with random indentation and colors
+ * Simple Syntax Highlighter with Realistic Code Generation
+ * Transforms plain text into convincing code-like output
  */
 
 export type CodeLanguage = 'javascript' | 'python' | 'rust' | 'go' | 'cpp' | 'ruby' | 'java';
@@ -17,31 +17,29 @@ export interface Theme {
 
 export const MATRIX_THEME: Theme = {
   name: 'matrix-green',
-  background: '#000000',
-  textColor: '#00FFAA',       // Default text: cyan-green (vibrant fallback)
-  keyword: '#00FF00',         // Keywords: bright green
-  string: '#FF00FF',          // Strings: magenta
-  number: '#FFFF00',          // Numbers: yellow
-  comment: '#666666',         // Comments: dark gray
+  background: '#0D1117',           // GitHub dark background
+  textColor: '#C9D1D9',            // Light gray text
+  keyword: '#FF7B72',              // Red-orange keywords
+  string: '#A5D6FF',               // Light blue strings
+  number: '#79C0FF',               // Blue numbers
+  comment: '#8B949E',              // Gray comments
 };
 
 /**
  * Keywords for syntax highlighting
  */
 const KEYWORDS: Record<CodeLanguage, string[]> = {
-  javascript: ['const', 'let', 'var', 'function', 'class', 'return', 'if', 'else', 'for', 'while', 'new', 'this', 'constructor', 'console', 'log', 'async', 'await'],
-  python: ['def', 'class', 'return', 'if', 'else', 'for', 'while', 'import', 'from', 'self', 'print', 'True', 'False', 'None', 'async', 'await'],
-  rust: ['let', 'mut', 'fn', 'impl', 'struct', 'enum', 'pub', 'use', 'return', 'if', 'else', 'for', 'while', 'println!', 'vec!'],
-  go: ['func', 'var', 'const', 'type', 'struct', 'interface', 'return', 'if', 'else', 'for', 'range', 'fmt', 'Println', 'package'],
-  cpp: ['auto', 'class', 'public', 'private', 'return', 'if', 'else', 'for', 'while', 'std', 'cout', 'endl', 'namespace', 'using'],
-  ruby: ['def', 'class', 'end', 'return', 'if', 'else', 'for', 'while', 'puts', 'true', 'false', 'nil', 'require'],
-  java: ['public', 'private', 'class', 'void', 'int', 'String', 'return', 'if', 'else', 'for', 'while', 'new', 'System', 'println'],
+  javascript: ['const', 'let', 'var', 'function', 'class', 'return', 'if', 'else', 'for', 'while', 'new', 'this', 'async', 'await', 'export', 'import', 'from', 'try', 'catch', 'throw'],
+  python: ['def', 'class', 'return', 'if', 'else', 'elif', 'for', 'while', 'import', 'from', 'self', 'True', 'False', 'None', 'async', 'await', 'try', 'except', 'with', 'as'],
+  rust: ['let', 'mut', 'fn', 'impl', 'struct', 'enum', 'pub', 'use', 'return', 'if', 'else', 'for', 'while', 'match', 'Some', 'None', 'Ok', 'Err', 'async', 'await'],
+  go: ['func', 'var', 'const', 'type', 'struct', 'interface', 'return', 'if', 'else', 'for', 'range', 'package', 'import', 'defer', 'go', 'chan', 'select', 'case'],
+  cpp: ['auto', 'class', 'public', 'private', 'protected', 'return', 'if', 'else', 'for', 'while', 'namespace', 'using', 'template', 'typename', 'virtual', 'override', 'const', 'static'],
+  ruby: ['def', 'class', 'end', 'return', 'if', 'else', 'elsif', 'for', 'while', 'do', 'begin', 'rescue', 'ensure', 'module', 'attr_accessor', 'require', 'include'],
+  java: ['public', 'private', 'protected', 'class', 'void', 'int', 'String', 'return', 'if', 'else', 'for', 'while', 'new', 'static', 'final', 'extends', 'implements', 'try', 'catch'],
 };
 
 /**
- * Apply syntax highlighting to code text with varied colors
- * Uses placeholder technique to avoid regex conflicts
- * Colors EVERYTHING - no grey text!
+ * Apply syntax highlighting to code text
  */
 export function highlightCode(code: string, language: CodeLanguage, theme: Theme): string {
   let highlighted = code;
@@ -58,13 +56,13 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
 
   // Protect comments FIRST
   highlighted = highlighted.replace(/\/\/(.*?)$/gm, (match) => {
-    const placeholder = `__COMMENT_${placeholderIndex}__`;
+    const placeholder = `__PROTECTED_${placeholderIndex}__`;
     protectedRegions[placeholderIndex] = `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`;
     placeholderIndex++;
     return placeholder;
   });
   highlighted = highlighted.replace(/#(.*?)$/gm, (match) => {
-    const placeholder = `__COMMENT_${placeholderIndex}__`;
+    const placeholder = `__PROTECTED_${placeholderIndex}__`;
     protectedRegions[placeholderIndex] = `<span style="color: ${theme.comment}; font-style: italic;">${match}</span>`;
     placeholderIndex++;
     return placeholder;
@@ -72,237 +70,259 @@ export function highlightCode(code: string, language: CodeLanguage, theme: Theme
 
   // Protect strings
   highlighted = highlighted.replace(/"([^"]*)"/g, (_match, content) => {
-    const placeholder = `__STRING_${placeholderIndex}__`;
-    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string}; font-weight: 500;">"${content}"</span>`;
+    const placeholder = `__PROTECTED_${placeholderIndex}__`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">"${content}"</span>`;
     placeholderIndex++;
     return placeholder;
   });
   highlighted = highlighted.replace(/'([^']*)'/g, (_match, content) => {
-    const placeholder = `__STRING_${placeholderIndex}__`;
-    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string}; font-weight: 500;">'${content}'</span>`;
+    const placeholder = `__PROTECTED_${placeholderIndex}__`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">'${content}'</span>`;
+    placeholderIndex++;
+    return placeholder;
+  });
+  // Template literals
+  highlighted = highlighted.replace(/`([^`]*)`/g, (_match, content) => {
+    const placeholder = `__PROTECTED_${placeholderIndex}__`;
+    protectedRegions[placeholderIndex] = `<span style="color: ${theme.string};">\`${content}\`</span>`;
     placeholderIndex++;
     return placeholder;
   });
 
-  // Highlight numbers BEFORE keywords (so they don't get caught by word boundaries)
-  highlighted = highlighted.replace(/\b(\d+)\b/g, `<span style="color: ${theme.number}; font-weight: 600;">$1</span>`);
+  // Highlight numbers
+  highlighted = highlighted.replace(/\b(\d+\.?\d*)\b/g, `<span style="color: ${theme.number};">$1</span>`);
 
   // Highlight keywords
   const keywords = KEYWORDS[language] || [];
   keywords.forEach(keyword => {
     const regex = new RegExp(`\\b(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})\\b`, 'g');
-    highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword}; font-weight: 700;">$1</span>`);
+    highlighted = highlighted.replace(regex, `<span style="color: ${theme.keyword}; font-weight: 600;">$1</span>`);
   });
 
-  // Highlight function names (before parentheses) - CYAN
-  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(\()/g, `<span style="color: #00FFFF; font-weight: 600;">$1</span>$2`);
+  // Highlight function calls - cyan
+  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, `<span style="color: #79C0FF;">$1</span>(`);
 
-  // Highlight variable names (before equals) - ORANGE
-  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*(=)/g, `<span style="color: #FF8800; font-weight: 500;">$1</span>$2`);
+  // Highlight property access - light purple
+  highlighted = highlighted.replace(/\.([a-zA-Z_][a-zA-Z0-9_]*)/g, `.<span style="color: #D2A8FF;">$1</span>`);
 
-  // Highlight property access (after dot) - PINK
-  highlighted = highlighted.replace(/\.([a-zA-Z_][a-zA-Z0-9_]*)/g, `.<span style="color: #FF69B4; font-weight: 500;">$1</span>`);
+  // Highlight operators
+  highlighted = highlighted.replace(/([+\-*/%<>!&|=]+)/g, `<span style="color: #FF7B72;">$1</span>`);
 
-  // Highlight operators - RED/ORANGE
-  highlighted = highlighted.replace(/([+\-*/%<>!&|]+)/g, `<span style="color: #FF4444;">$1</span>`);
-
-  // Highlight equals sign specifically - BRIGHT ORANGE
-  highlighted = highlighted.replace(/(=)/g, `<span style="color: #FF8800;">$1</span>`);
-
-  // Highlight punctuation - LIGHT PURPLE
-  highlighted = highlighted.replace(/([{}[\]();,.])/g, `<span style="color: #AA88FF;">$1</span>`);
-
-  // COLOR ALL REMAINING IDENTIFIERS that haven't been colored yet
-  // This ensures NO grey text remains
-  const colorPalette = ['#00FFAA', '#00DDFF', '#FFAA00', '#FF66FF', '#66FFFF', '#AAFF00'];
-  let colorIndex = 0;
-
-  highlighted = highlighted.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\b/g, (match) => {
-    // Skip if already wrapped in span
-    if (match.includes('span') || match.includes('style')) {
-      return match;
-    }
-    const color = colorPalette[colorIndex % colorPalette.length]!;
-    colorIndex++;
-    return `<span style="color: ${color};">${match}</span>`;
-  });
+  // Highlight brackets/braces - yellow
+  highlighted = highlighted.replace(/([{}[\]()])/g, `<span style="color: #FFA657;">$1</span>`);
 
   // Restore protected regions
   protectedRegions.forEach((region, index) => {
-    const commentPlaceholder = `__COMMENT_${index}__`;
-    const stringPlaceholder = `__STRING_${index}__`;
-    highlighted = highlighted.replace(commentPlaceholder, region);
-    highlighted = highlighted.replace(stringPlaceholder, region);
+    highlighted = highlighted.replace(`__PROTECTED_${index}__`, region);
   });
 
   return highlighted;
 }
 
 /**
- * Transform plain text to beautiful, varied code-like structure
- * Each line gets random treatment - variables, functions, objects, etc.
+ * Transform plain text into realistic-looking code
+ * Creates structured code blocks with proper indentation
  */
 export function textToCode(text: string, language: CodeLanguage): string {
   if (!text.trim()) {
-    return '// Start typing...';
+    return '// Waiting for input...';
   }
 
-  const lines = text.split('\n');
-  const codeLines: string[] = [];
-
-  // Pool of realistic variable/function names for variety
-  const VAR_NAMES = ['data', 'result', 'value', 'item', 'config', 'options', 'state', 'content', 'element', 'response'];
-  const FUNC_NAMES = ['process', 'handle', 'update', 'fetch', 'render', 'validate', 'transform', 'calculate', 'initialize', 'execute'];
-  const STRING_VALUES = ['success', 'error', 'pending', 'active', 'disabled', 'loaded', 'ready', 'complete', 'failed', 'processing'];
-  const OBJECT_KEYS = ['id', 'name', 'type', 'status', 'count', 'index', 'key', 'label', 'title', 'description'];
-
-  // Simple hash for deterministic selection
-  const hashCode = (str: string): number => {
-    let hash = 0;
+  // Hash function for deterministic randomness
+  const hash = (str: string, seed = 0): number => {
+    let h = seed;
     for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash) + str.charCodeAt(i);
-      hash = hash & hash;
+      h = ((h << 5) - h) + str.charCodeAt(i);
+      h = h & h;
     }
-    return Math.abs(hash);
+    return Math.abs(h);
   };
 
-  // Code patterns with much more variety - not always using user text
-  const patterns = [
-    (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // Variable with number
-      const varKeyword = lang === 'python' ? '' : lang === 'rust' ? 'let ' : lang === 'go' ? 'var ' : 'const ';
-      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const num = Math.floor(hashCode(text + lineIndex) % 1000);
-      return `${varKeyword}${varName} = ${num};`;
+  // Convert text to camelCase variable name
+  const toCamelCase = (str: string): string => {
+    const words = str.toLowerCase().split(/\s+/).filter(w => w.length > 0).slice(0, 3);
+    if (words.length === 0) return 'data';
+    return words.map((w, i) => i === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1)).join('').replace(/[^a-zA-Z0-9]/g, '');
+  };
+
+  // Variable and function name pools
+  const VARS = ['data', 'result', 'value', 'config', 'state', 'response', 'payload', 'context', 'handler', 'callback'];
+  const FUNCS = ['process', 'handle', 'update', 'fetch', 'render', 'validate', 'transform', 'execute', 'initialize', 'compute'];
+  const TYPES = ['User', 'Item', 'Config', 'Response', 'Request', 'Handler', 'Service', 'Controller', 'Manager', 'Factory'];
+  const PROPS = ['id', 'name', 'type', 'status', 'count', 'value', 'enabled', 'active', 'timestamp', 'version'];
+
+  const pick = <T>(arr: T[], seed: number): T => arr[seed % arr.length]!;
+
+  const lines = text.split('\n').filter(l => l.trim());
+  const codeLines: string[] = [];
+  let currentIndent = 0;
+  let inBlock = false;
+  let blockDepth = 0;
+
+  // Language-specific syntax helpers
+  const syntax = {
+    varKeyword: language === 'python' ? '' : language === 'rust' ? 'let ' : language === 'go' ? '' : 'const ',
+    funcKeyword: language === 'python' ? 'def' : language === 'rust' ? 'fn' : language === 'go' ? 'func' : language === 'java' ? 'public void' : 'function',
+    classKeyword: language === 'python' ? 'class' : language === 'rust' ? 'struct' : language === 'go' ? 'type' : 'class',
+    comment: language === 'python' || language === 'ruby' ? '#' : '//',
+    semi: language === 'python' || language === 'ruby' || language === 'go' ? '' : ';',
+    arrow: language === 'python' ? ':' : language === 'rust' ? ' ->' : language === 'go' ? '' : ' =>',
+    blockStart: language === 'python' ? ':' : ' {',
+    blockEnd: language === 'python' ? '' : '}',
+  };
+
+  const indent = () => '  '.repeat(currentIndent);
+
+  // Code block generators
+  const generators = [
+    // Import/use statement
+    (text: string, idx: number) => {
+      const module = pick(TYPES, hash(text, idx)).toLowerCase();
+      if (language === 'python') return `from ${module} import ${pick(FUNCS, hash(text, idx + 1))}`;
+      if (language === 'rust') return `use crate::${module}::${pick(TYPES, hash(text, idx + 1))};`;
+      if (language === 'go') return `import "${module}"`;
+      if (language === 'java') return `import com.app.${module}.${pick(TYPES, hash(text, idx + 1))};`;
+      return `import { ${pick(FUNCS, hash(text, idx + 1))} } from './${module}'${syntax.semi}`;
     },
-    (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // Variable with string value (not user's text)
-      const varKeyword = lang === 'python' ? '' : lang === 'rust' ? 'let ' : lang === 'go' ? 'var ' : 'const ';
-      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const strValue = STRING_VALUES[hashCode(text + lineIndex + 1) % STRING_VALUES.length]!;
-      return `${varKeyword}${varName} = "${strValue}";`;
+
+    // Variable assignment with object
+    (text: string, idx: number) => {
+      const varName = toCamelCase(text) || pick(VARS, hash(text, idx));
+      const prop1 = pick(PROPS, hash(text, idx));
+      const prop2 = pick(PROPS, hash(text, idx + 1));
+      const val = hash(text, idx) % 100;
+      return `${syntax.varKeyword}${varName} = { ${prop1}: ${val}, ${prop2}: "${pick(VARS, hash(text, idx + 2))}" }${syntax.semi}`;
     },
-    (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // Function declaration with return value
-      const funcName = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
-      const keyword = lang === 'python' ? 'def ' : lang === 'rust' ? 'fn ' : lang === 'go' ? 'func ' : 'function ';
-      const retVal = hashCode(text + lineIndex) % 3 === 0 ? 'true' : (hashCode(text) % 2 === 0 ? 'null' : Math.floor(hashCode(text) % 100).toString());
-      return `${keyword}${funcName}() { return ${retVal}; }`;
+
+    // Function call with callback
+    (text: string, idx: number) => {
+      const func = pick(FUNCS, hash(text, idx));
+      const arg = pick(VARS, hash(text, idx + 1));
+      if (language === 'python') return `${func}(${arg}, lambda x: x.${pick(PROPS, hash(text, idx + 2))})`;
+      return `${func}(${arg}, (x)${syntax.arrow} x.${pick(PROPS, hash(text, idx + 2))})${syntax.semi}`;
     },
-    (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Function call with varied params
-      const funcName = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
-      const param1 = VAR_NAMES[hashCode(text) % VAR_NAMES.length]!;
-      const param2 = Math.floor(hashCode(text + lineIndex) % 50);
-      return `${funcName}(${param1}, ${param2});`;
+
+    // Async function start (opens block)
+    (text: string, idx: number) => {
+      const funcName = pick(FUNCS, hash(text, idx)) + pick(TYPES, hash(text, idx + 1));
+      inBlock = true;
+      blockDepth++;
+      if (language === 'python') return `async def ${funcName}(${pick(VARS, hash(text, idx + 2))}):`;
+      if (language === 'rust') return `async fn ${funcName}(${pick(VARS, hash(text, idx + 2))}: &str) -> Result<()> {`;
+      if (language === 'go') return `func ${funcName}(${pick(VARS, hash(text, idx + 2))} string) error {`;
+      return `async ${syntax.funcKeyword} ${funcName}(${pick(VARS, hash(text, idx + 2))})${syntax.blockStart}`;
     },
-    (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Object with multiple properties
-      const key1 = OBJECT_KEYS[hashCode(text + lineIndex) % OBJECT_KEYS.length]!;
-      const key2 = OBJECT_KEYS[(hashCode(text + lineIndex) + 1) % OBJECT_KEYS.length]!;
-      const num = Math.floor(hashCode(text) % 100);
-      return `{ ${key1}: ${num}, ${key2}: true }`;
+
+    // Method chain
+    (text: string, idx: number) => {
+      const base = pick(VARS, hash(text, idx));
+      const m1 = pick(FUNCS, hash(text, idx + 1));
+      const m2 = pick(FUNCS, hash(text, idx + 2));
+      const m3 = ['map', 'filter', 'reduce', 'find', 'forEach'][hash(text, idx + 3) % 5]!;
+      return `${base}.${m1}().${m2}().${m3}(item => item)${syntax.semi}`;
     },
-    (text: string, _lang: CodeLanguage, _lineIndex: number) => {
-      // Array with realistic values
-      const val1 = STRING_VALUES[hashCode(text) % STRING_VALUES.length]!;
-      const val2 = STRING_VALUES[(hashCode(text) + 1) % STRING_VALUES.length]!;
-      return `["${val1}", "${val2}"]`;
+
+    // Try-catch/error handling
+    (text: string, idx: number) => {
+      const varName = pick(VARS, hash(text, idx));
+      if (language === 'python') return `try:\n${indent()}    ${varName} = await ${pick(FUNCS, hash(text, idx + 1))}()`;
+      if (language === 'rust') return `let ${varName} = ${pick(FUNCS, hash(text, idx + 1))}().await?;`;
+      if (language === 'go') return `${varName}, err := ${pick(FUNCS, hash(text, idx + 1))}()`;
+      return `const ${varName} = await ${pick(FUNCS, hash(text, idx + 1))}()${syntax.semi}`;
     },
-    (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // Conditional with comparison
-      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const keyword = lang === 'python' ? 'if' : 'if';
-      const num = Math.floor(hashCode(text) % 20);
-      const operator = hashCode(text) % 2 === 0 ? '>' : '===';
-      const compareVal = operator === '>' ? num.toString() : `"${STRING_VALUES[hashCode(text) % STRING_VALUES.length]!}"`;
-      return `${keyword} (${varName} ${operator} ${compareVal}) { }`;
+
+    // Conditional with body
+    (text: string, idx: number) => {
+      const varName = pick(VARS, hash(text, idx));
+      const prop = pick(PROPS, hash(text, idx + 1));
+      const op = ['===', '!==', '>', '<', '>='][hash(text, idx + 2) % 5]!;
+      const val = hash(text, idx + 3) % 50;
+      inBlock = true;
+      blockDepth++;
+      if (language === 'python') return `if ${varName}.${prop} ${op.replace('===', '==')} ${val}:`;
+      return `if (${varName}.${prop} ${op} ${val})${syntax.blockStart}`;
     },
-    (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // For loop with array iteration
-      const arrName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const keyword = lang === 'python' ? 'for' : 'for';
-      return `${keyword} (const item of ${arrName}) { }`;
+
+    // Return statement
+    (text: string, idx: number) => {
+      const varName = pick(VARS, hash(text, idx));
+      const prop = pick(PROPS, hash(text, idx + 1));
+      return `return ${varName}.${prop}${syntax.semi}`;
     },
-    (text: string, lang: CodeLanguage) => {
-      // Comment with user's text (only place we use it)
-      const comment = lang === 'python' || lang === 'ruby' ? '#' : '//';
-      return `${comment} ${text}`;
+
+    // Comment with user's text
+    (text: string, _idx: number) => {
+      return `${syntax.comment} ${text}`;
     },
-    (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Return with variable operation
-      const var1 = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const var2 = VAR_NAMES[(hashCode(text + lineIndex) + 1) % VAR_NAMES.length]!;
-      const operator = ['+', '-', '*', '||', '&&'][hashCode(text) % 5]!;
-      return `return ${var1} ${operator} ${var2};`;
+
+    // Array operation
+    (text: string, idx: number) => {
+      const arr = pick(VARS, hash(text, idx)) + 's';
+      const method = ['map', 'filter', 'reduce', 'find', 'every', 'some'][hash(text, idx + 1) % 6]!;
+      const prop = pick(PROPS, hash(text, idx + 2));
+      if (language === 'python') return `${arr} = [x.${prop} for x in ${pick(VARS, hash(text, idx + 3))}]`;
+      return `${syntax.varKeyword}${arr} = ${pick(VARS, hash(text, idx + 3))}.${method}(x => x.${prop})${syntax.semi}`;
     },
-    (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Method chaining
-      const method1 = FUNC_NAMES[hashCode(text + lineIndex) % FUNC_NAMES.length]!;
-      const method2 = FUNC_NAMES[(hashCode(text + lineIndex) + 1) % FUNC_NAMES.length]!;
-      return `data.${method1}().${method2}();`;
+
+    // Object destructuring
+    (text: string, idx: number) => {
+      const p1 = pick(PROPS, hash(text, idx));
+      const p2 = pick(PROPS, hash(text, idx + 1));
+      const source = pick(VARS, hash(text, idx + 2));
+      if (language === 'python') return `${p1}, ${p2} = ${source}.${p1}, ${source}.${p2}`;
+      if (language === 'rust') return `let ${pick(TYPES, hash(text, idx))} { ${p1}, ${p2}, .. } = ${source};`;
+      if (language === 'go') return `${p1}, ${p2} := ${source}.${pick(FUNCS, hash(text, idx + 3))}()`;
+      return `const { ${p1}, ${p2} } = ${source}${syntax.semi}`;
     },
-    (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Assignment with object property
-      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const objKey = OBJECT_KEYS[hashCode(text) % OBJECT_KEYS.length]!;
-      const num = Math.floor(hashCode(text + lineIndex) % 100);
-      return `${varName}.${objKey} = ${num};`;
-    },
-    (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Ternary expression
-      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const val1 = STRING_VALUES[hashCode(text) % STRING_VALUES.length]!;
-      const val2 = STRING_VALUES[(hashCode(text) + 1) % STRING_VALUES.length]!;
-      return `${varName} ? "${val1}" : "${val2}"`;
-    },
-    (text: string, lang: CodeLanguage, lineIndex: number) => {
-      // Switch/match statement start
-      const varName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const keyword = lang === 'rust' ? 'match' : 'switch';
-      return `${keyword} (${varName}) {`;
-    },
-    (text: string, _lang: CodeLanguage, lineIndex: number) => {
-      // Array method
-      const arrName = VAR_NAMES[hashCode(text + lineIndex) % VAR_NAMES.length]!;
-      const method = ['map', 'filter', 'reduce', 'find', 'some'][hashCode(text) % 5]!;
-      return `${arrName}.${method}(item => item)`;
+
+    // Class/struct property
+    (text: string, idx: number) => {
+      const prop = pick(PROPS, hash(text, idx));
+      const type = pick(TYPES, hash(text, idx + 1));
+      if (language === 'python') return `self.${prop} = ${pick(VARS, hash(text, idx + 2))}`;
+      if (language === 'rust') return `${prop}: ${type},`;
+      if (language === 'java') return `private ${type} ${prop};`;
+      return `this.${prop} = ${pick(VARS, hash(text, idx + 2))}${syntax.semi}`;
     },
   ];
 
-  let lastPatternIndex = -1;
-
-  lines.forEach((line, index) => {
-    if (!line.trim()) {
-      codeLines.push('');
-      return;
+  lines.forEach((line, idx) => {
+    // Occasionally close a block
+    if (inBlock && blockDepth > 0 && hash(line, idx) % 4 === 0) {
+      currentIndent = Math.max(0, currentIndent - 1);
+      if (syntax.blockEnd) {
+        codeLines.push(`${indent()}${syntax.blockEnd}`);
+      }
+      blockDepth--;
+      if (blockDepth === 0) inBlock = false;
     }
 
-    // Deterministic indent based on line content
-    const indentLevel = hashCode(line + index) % 5;
-    const indent = '  '.repeat(indentLevel);
+    // Select generator based on content hash
+    const genIdx = hash(line, idx) % generators.length;
+    const generator = generators[genIdx]!;
+    const codeLine = generator(line, idx);
 
-    // Deterministic pattern selection (avoid repeating same pattern twice in a row)
-    let patternIndex = hashCode(line + index) % patterns.length;
-    if (patternIndex === lastPatternIndex && patterns.length > 1) {
-      patternIndex = (patternIndex + 1) % patterns.length;
+    codeLines.push(`${indent()}${codeLine}`);
+
+    // Increase indent after opening a block
+    if (inBlock && codeLine.endsWith(syntax.blockStart)) {
+      currentIndent++;
     }
-    lastPatternIndex = patternIndex;
 
-    const pattern = patterns[patternIndex];
-    if (!pattern) {
-      codeLines.push(`${indent}${line}`);
-      return;
-    }
-    const codeLine = pattern(line, language, index);
-
-    codeLines.push(`${indent}${codeLine}`);
-
-    // Add occasional spacing between code blocks (20% chance, deterministic)
-    if (index > 0 && (hashCode(line + index) % 5) === 0) {
+    // Add blank line occasionally for readability
+    if (hash(line, idx + 100) % 4 === 0) {
       codeLines.push('');
     }
   });
+
+  // Close any remaining blocks
+  while (blockDepth > 0) {
+    currentIndent = Math.max(0, currentIndent - 1);
+    if (syntax.blockEnd) {
+      codeLines.push(`${indent()}${syntax.blockEnd}`);
+    }
+    blockDepth--;
+  }
 
   return codeLines.join('\n');
 }
